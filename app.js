@@ -69,7 +69,7 @@ const gist = b => (b || '').split(/\r?\n/).map(s => s.replace(/^[#>*\-\s]+/, '')
 let DATA = { repos: {}, generated: null };
 const rel = p => DATA.repos[p.repo]?.releases || [];
 const latest = p => rel(p)[0];
-const ranked = () => [...P].sort((a, b) => new Date(latest(b)?.date || 0) - new Date(latest(a)?.date || 0));
+const ranked = () => P.filter(p => !DATA.repos[p.repo]?.hidden).sort((a, b) => new Date(latest(b)?.date || 0) - new Date(latest(a)?.date || 0));
 const mainAssets = r => (r?.assets || []).filter(a => !isMeta(a.name) && kind(a.name)).sort((a, b) => (kind(b.name) === dev) - (kind(a.name) === dev) || KO.indexOf(kind(a.name)) - KO.indexOf(kind(b.name)));
 const best = p => { const r = latest(p), as = mainAssets(r), pick = as.find(a => kind(a.name) === (dev || 'Windows') && /setup|\.msi|universal/i.test(a.name)) || as.find(a => kind(a.name) === dev) || as[0]; return pick?.url || r?.url || `https://github.com/${USER}/${p.repo}/releases`; };
 const fresh = r => r && Date.now() - new Date(r.date) < 14 * 864e5;
@@ -147,7 +147,7 @@ function openApp(repo, relTag) {
     <div class="sec"><h3>Releases</h3>${R.map(r => `<details class="ep" id="rel-${esc(r.tag)}"${r.tag === (relTag || L?.tag) ? ' open' : ''}><summary><span class="tg">${esc(r.tag)}</span><span><h4>${esc(r.name || r.tag)}</h4><small>${esc(gist(r.body))}</small></span><time datetime="${r.date}">${ago(r.date)}</time></summary>
       <div class="notes">${md(r.body)}<div class="chips">${mainAssets(r).slice(0, 8).map(a => `<a href="${a.url}">${esc(kind(a.name))} ${size(a.size)}</a>`).join('')}<a href="${r.url}" target="_blank" rel="noopener">Release page</a></div></div></details>`).join('')}</div>
     <div class="sec"><h3>${p.shots.length ? 'Screenshots' : 'Preview'}</h3><div class="shots">${shots}</div></div>
-    <div class="sec"><h3>More like this</h3><div class="similar">${P.filter(x => x !== p).map((x, i) => card(x, null, i)).join('')}</div></div>
+    <div class="sec"><h3>More like this</h3><div class="similar">${ranked().filter(x => x !== p).map((x, i) => card(x, null, i)).join('')}</div></div>
     <div class="links"><a href="https://github.com/${USER}/${p.repo}" target="_blank" rel="noopener">Source on GitHub</a><a href="https://github.com/${USER}/${p.repo}/releases" target="_blank" rel="noopener">All releases</a><a href="https://github.com/${USER}/${p.repo}/issues" target="_blank" rel="noopener">Report an issue</a></div>
   </div>`;
   if (!modal.open) { modal.showModal(); document.body.classList.add('noscroll'); }
@@ -222,8 +222,14 @@ addEventListener('scroll', () => {
 const status = (cls, txt) => { const s = $('#status'); s.className = 'status ' + cls; $('span', s).textContent = txt; };
 const gh = path => fetch('https://api.github.com/' + path, { headers: { Accept: 'application/vnd.github+json' } }).then(r => { if (!r.ok) throw new Error(r.status); return r.json(); });
 const slim = r => ({ tag: r.tag_name, name: r.name, date: r.published_at, body: r.body || '', url: r.html_url, pre: r.prerelease, assets: r.assets.map(a => ({ name: a.name, size: a.size, dl: a.download_count, url: a.browser_download_url })) });
-const fetchLive = async () => { const repos = {}; await Promise.all(P.map(async p => { const [r, l] = await Promise.all([gh(`repos/${USER}/${p.repo}/releases?per_page=8`), gh(`repos/${USER}/${p.repo}/languages`)]); repos[p.repo] = { releases: r.filter(x => !x.draft).map(slim), languages: l }; })); return { generated: new Date().toISOString(), repos }; };
-const sig = d => JSON.stringify(P.map(p => (d.repos[p.repo]?.releases || []).map(r => r.tag + r.assets.map(a => a.dl))));
+// Only public, non-archived repos are shown: a 404 (private) or archived flag hides the app.
+const fetchLive = async () => { const repos = {}; await Promise.all(P.map(async p => {
+  const m = await gh(`repos/${USER}/${p.repo}`).catch(e => { if (e.message === '404') return null; throw e; });
+  if (!m || m.archived || m.private) { repos[p.repo] = { releases: [], languages: {}, hidden: true }; return; }
+  const [r, l] = await Promise.all([gh(`repos/${USER}/${p.repo}/releases?per_page=8`), gh(`repos/${USER}/${p.repo}/languages`)]);
+  repos[p.repo] = { releases: r.filter(x => !x.draft).map(slim), languages: l };
+})); return { generated: new Date().toISOString(), repos }; };
+const sig = d => JSON.stringify(P.map(p => [d.repos[p.repo]?.hidden, (d.repos[p.repo]?.releases || []).map(r => r.tag + r.assets.map(a => a.dl))]));
 const render = () => { buildBillboard(); buildRows(q.value.trim().toLowerCase()); };
 
 (async () => {

@@ -8,6 +8,7 @@ const slim = r => ({ tag: r.tag_name, name: r.name, date: r.published_at, body: 
 const out = { generated: new Date().toISOString(), repos: {} };
 for (const r of REPOS) {
   const [rel, lang, meta] = await Promise.all([get(`repos/${USER}/${r}/releases?per_page=8`), get(`repos/${USER}/${r}/languages`), get(`repos/${USER}/${r}`)]);
+  if (meta.archived || meta.private) { out.repos[r] = { releases: [], languages: {}, hidden: true }; continue; } // public, non-archived only
   out.repos[r] = { releases: rel.filter(x => !x.draft).map(slim), languages: lang, pushed: meta.pushed_at, stars: meta.stargazers_count };
 }
 await (await import('node:fs/promises')).writeFile(new URL('../data.json', import.meta.url), JSON.stringify(out));
