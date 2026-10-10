@@ -8,7 +8,8 @@ const ICON = { dl: svg('<path d="M12 3v12m0 0-5-5m5 5 5-5M4 20h16"/>'), info: sv
   chev: svg('<path d="m6 9 6 6 6-6"/>'), l: svg('<path d="m15 5-7 7 7 7"/>'), r: svg('<path d="m9 5 7 7-7 7"/>') };
 
 /* ---------- content that GitHub does not provide ---------- */
-const P = [
+// Hand-written details for the apps I curated. Any other public repo is picked up automatically (see auto()).
+const P0 = [
   { repo: '1-download-manager', name: '1 download manager', a: '#5b8cff', plats: ['Android', 'Windows', 'Browser'],
     line: 'One queue for every download.',
     desc: 'A free download manager for Android and Windows: direct links, YouTube, torrents and free media libraries in one queue, with browser extensions for Chrome and Firefox.',
@@ -36,6 +37,8 @@ const P = [
       ['Updates', 'Windows updates through winget and Chocolatey. On Android: Play Store, F-Droid and GitHub updates.'], ['Disk space by file type', 'Videos, archives, documents and the largest files, with Recycle Bin or permanent delete.'],
       ['Small updates', 'The Windows app updates itself with small delta packages.']], shots: [] }
 ];
+const CUR = Object.fromEntries(P0.map(p => [p.repo, p]));
+let P = [];
 const LANG = { Kotlin: '#a97bff', JavaScript: '#f1e05a', PowerShell: '#5391fe', HTML: '#e34c26', 'C#': '#3fb950', 'C++': '#f34b7d', Batchfile: '#c1f12e', Shell: '#89e051', CSS: '#7f5fd0', TypeScript: '#3178c6' };
 
 /* ---------- illustrations (not screenshots) for apps without public screenshots ---------- */
@@ -51,7 +54,8 @@ const ART = {
   appDash: () => win([['Videos', 250, '#34d3a0'], ['Archives', 170, '#5b8cff'], ['Documents', 100, '#ffb347'], ['Other', 60, '#ff7a9a']].map(([n, w, c], i) => `<text x="34" y="${84 + i * 38}" fill="#b7a9ad" font-size="13" font-family="sans-serif">${n}</text>` + bar(120, 74 + i * 38, 360, 12, '#ffffff14') + bar(120, 74 + i * 38, w * 1.4, 12, c, .15 * i)).join('') +
     ['Used often', 'Sometimes', 'Rarely'].map((n, i) => `<rect x="${34 + i * 156}" y="240" width="146" height="52" rx="10" fill="#2a1e24"/><circle cx="${58 + i * 156}" cy="266" r="7" fill="${['#34d3a0', '#ffb347', '#ff7a9a'][i]}"/><text x="${74 + i * 156}" y="271" fill="#fff" font-size="13" font-family="sans-serif">${n}</text>`).join(''), 'Illustration of AppDash storage bars and usage groups')
 };
-const media = p => p.repo === '1-download-manager' ? `<div class="phones">${['downloads', 'discover', 'youtube'].map(f => `<img src="img/dm-android-${f}.png" alt="" loading="lazy">`).join('')}</div>` : ART[p.repo]();
+const genericArt = p => win(`<text x="260" y="190" text-anchor="middle" fill="${p.a}" font-size="130" font-weight="800" font-family="sans-serif">${esc(p.name[0])}</text><text x="260" y="245" text-anchor="middle" fill="#b7a9ad" font-size="16" font-family="sans-serif">${esc(p.name)}</text>`, `Illustration for ${esc(p.name)}`);
+const media = p => p.repo === '1-download-manager' ? `<div class="phones">${['downloads', 'discover', 'youtube'].map(f => `<img src="img/dm-android-${f}.png" alt="" loading="lazy">`).join('')}</div>` : (ART[p.repo] || genericArt)(p);
 
 /* ---------- helpers ---------- */
 const rtf = new Intl.RelativeTimeFormat('en', { numeric: 'auto' });
@@ -67,11 +71,20 @@ const md = src => { let h = '', ul = false; for (const l of esc(src || '').split
 const gist = b => (b || '').split(/\r?\n/).map(s => s.replace(/^[#>*\-\s]+/, '').replace(/\*\*|`/g, '').trim()).find(Boolean) || 'No release notes.';
 
 let DATA = { repos: {}, generated: null };
+// New repos get a card built from their GitHub description, language and release assets.
+const hue = s => [...s].reduce((h, c) => (h * 31 + c.charCodeAt(0)) % 360, 7);
+const auto = (repo, d) => {
+  const ks = new Set((d.releases[0]?.assets || []).filter(a => !isMeta(a.name)).map(a => kind(a.name)).map(k => k === 'Chrome' || k === 'Firefox' ? 'Browser' : k).filter(Boolean)), desc = d.meta?.description;
+  return { repo, name: repo.replace(/[-_]+/g, ' ').replace(/^./, c => c.toUpperCase()), a: `hsl(${hue(repo)} 85% 62%)`, plats: ks.size ? [...ks] : ['Source'],
+    line: desc || 'A project on GitHub.', desc: desc || 'No description yet. See the source on GitHub.', feats: [], shots: [], auto: true };
+};
+const sync = () => { P = Object.entries(DATA.repos).map(([k, d]) => CUR[k] || auto(k, d)); };
 const rel = p => DATA.repos[p.repo]?.releases || [];
 const latest = p => rel(p)[0];
-const ranked = () => P.filter(p => !DATA.repos[p.repo]?.hidden).sort((a, b) => new Date(latest(b)?.date || 0) - new Date(latest(a)?.date || 0));
+const stamp = p => new Date(latest(p)?.date || 0).getTime() || new Date(DATA.repos[p.repo]?.meta?.pushed || 0).getTime() / 1e3;
+const ranked = () => [...P].sort((a, b) => stamp(b) - stamp(a));
 const mainAssets = r => (r?.assets || []).filter(a => !isMeta(a.name) && kind(a.name)).sort((a, b) => (kind(b.name) === dev) - (kind(a.name) === dev) || KO.indexOf(kind(a.name)) - KO.indexOf(kind(b.name)));
-const best = p => { const r = latest(p), as = mainAssets(r), pick = as.find(a => kind(a.name) === (dev || 'Windows') && /setup|\.msi|universal/i.test(a.name)) || as.find(a => kind(a.name) === dev) || as[0]; return pick?.url || r?.url || `https://github.com/${USER}/${p.repo}/releases`; };
+const best = p => { const r = latest(p), as = mainAssets(r), pick = as.find(a => kind(a.name) === (dev || 'Windows') && /setup|\.msi|universal/i.test(a.name)) || as.find(a => kind(a.name) === dev) || as[0]; return pick?.url || r?.url || `https://github.com/${USER}/${p.repo}`; };
 const fresh = r => r && Date.now() - new Date(r.date) < 14 * 864e5;
 
 /* ---------- cards, rows, billboard ---------- */
@@ -87,7 +100,8 @@ function buildRows(q = '') {
     ['recent', 'Recently updated', ps.map((p, i) => `<div class="ranked"><span class="num" aria-hidden="true">${i + 1}</span>${card(p, null, i)}</div>`)],
     ['android', 'On Android', ps.filter(p => p.plats.includes('Android')).map((p, i) => card(p, null, i))],
     ['windows', 'On Windows', ps.filter(p => p.plats.includes('Windows')).map((p, i) => card(p, null, i))],
-    ['browser', 'Browser extensions', ps.filter(p => p.plats.includes('Browser')).map((p, i) => card(p, null, i))]].filter(d => d[2].length);
+    ['browser', 'Browser extensions', ps.filter(p => p.plats.includes('Browser')).map((p, i) => card(p, null, i))],
+    ['source', 'Source projects', ps.filter(p => !latest(p)).map((p, i) => card(p, null, i))]].filter(d => d[2].length);
   $('#rows').innerHTML = defs.map(([id, t, items]) => `<section class="row" id="row-${id}"><h2>${t}<span class="count">${items.length}</span></h2><div class="scroller"><button class="arrow l" hidden aria-label="Scroll left">${ICON.l}</button><div class="strip">${items.join('')}</div><button class="arrow r" aria-label="Scroll right">${ICON.r}</button></div></section>`).join('');
   $('#empty').hidden = defs.length > 0;
   $('#nav').innerHTML = '<a href="#">Home</a>' + defs.filter(d => d[0] !== 'recent').map(d => `<a href="#row-${d[0]}">${d[1]}</a>`).join('');
@@ -103,7 +117,7 @@ function buildRows(q = '') {
 const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } }), { threshold: .12 });
 
 function buildBillboard() {
-  const ps = ranked(), bb = $('#billboard');
+  const ps = ranked().filter(latest).slice(0, 5), bb = $('#billboard');
   const seeds = Array.from({ length: 7 }, (_, i) => `<i style="left:${8 + i * 13}%;top:${30 + (i * 37) % 55}%;--r:${i * 40}deg;--dx:${(i % 2 ? 1 : -1) * 40}px;--t:${11 + i * 2}s"></i>`).join('');
   bb.innerHTML = ps.map((p, i) => { const l = latest(p); return `<article class="slide${i ? '' : ' on'}" style="--a:${p.a}" aria-hidden="${i ? 'true' : 'false'}">
     <div class="bd"></div><div class="bd-media">${media(p)}</div><div class="fx">${seeds}</div>
@@ -125,7 +139,7 @@ function buildBillboard() {
 /* ---------- details modal: releases are the episodes ---------- */
 const modal = $('#modal'), lightbox = $('#lightbox');
 function openApp(repo, relTag) {
-  const p = P.find(x => x.repo === repo); if (!p) return;
+  const p = P.find(x => x.repo === repo); if (!p) { closeModal(); return; }
   const R = rel(p), L = R[0], langs = DATA.repos[p.repo]?.languages || {}, tot = Object.values(langs).reduce((a, b) => a + b, 0) || 1;
   const dls = R.reduce((n, r) => n + r.assets.reduce((m, a) => m + (a.dl || 0), 0), 0);
   const as = mainAssets(L), extra = (L?.assets || []).filter(a => isMeta(a.name));
@@ -134,18 +148,18 @@ function openApp(repo, relTag) {
   modal.style.setProperty('--a', p.a);
   modal.innerHTML = `<button type="button" class="icon-btn close" aria-label="Close details">&times;</button>
   <div class="m-media" style="--a:${p.a}"><div class="bd"></div><div class="bd-media">${media(p)}</div>
-    <div class="m-head"><h2>${esc(p.name)}</h2><div class="btns"><a class="btn play" href="${best(p)}">${ICON.dl} Download</a><a class="btn info" href="https://github.com/${USER}/${p.repo}" target="_blank" rel="noopener">GitHub</a></div></div></div>
+    <div class="m-head"><h2>${esc(p.name)}</h2><div class="btns"><a class="btn play" href="${best(p)}">${L ? ICON.dl + ' Download' : 'View on GitHub'}</a>${L ? `<a class="btn info" href="https://github.com/${USER}/${p.repo}" target="_blank" rel="noopener">GitHub</a>` : ''}</div></div></div>
   <div class="m-body">
     <div class="m-cols"><div>
-      <div class="meta">${L ? `<span class="good">${esc(L.tag)}</span><span>${day(L.date)}</span>` : ''}${p.plats.map(x => `<span class="badge">${x}</span>`).join('')}</div>
+      <div class="meta">${L ? `<span class="good">${esc(L.tag)}</span><span>${day(L.date)}</span>` : ''}${p.plats.map(x => `<span class="badge">${x}</span>`).join('')}${(DATA.repos[p.repo]?.meta?.topics || []).map(t => `<span class="badge">${esc(t)}</span>`).join('')}</div>
       <p>${esc(p.desc)}</p><ul class="feat">${p.feats.map(([h, t]) => `<li><b>${esc(h)}.</b> ${esc(t)}</li>`).join('')}</ul></div>
       <dl class="side"><div><dt>Platforms</dt><dd>${p.plats.join(', ')}</dd></div>
         <div><dt>Written in</dt><dd>${top.slice(0, 3).map(([n, b]) => `${n} ${Math.round(b / tot * 100)}%`).join(', ')}<div class="lang">${top.map(([n, b]) => `<i title="${n}" style="flex:${b};background:${LANG[n] || '#888'}"></i>`).join('')}</div></dd></div>
         <div><dt>Downloads so far</dt><dd>${dls.toLocaleString()}</dd></div><div><dt>Releases</dt><dd>${R.length} shown, latest ${L ? ago(L.date) : 'none'}</dd></div></dl></div>
     ${L ? `<div class="sec"><h3>Get ${esc(L.tag)}</h3><div class="dl">${as.map(a => `<a href="${a.url}" class="${kind(a.name) === dev ? 'rec' : ''}"><span class="fn">${esc(a.name)}</span><span class="sz">${size(a.size)}</span>${kind(a.name) === dev ? '<span class="rc">Recommended for your device</span>' : `<span class="rc">${kind(a.name)}</span>`}</a>`).join('') || `<a href="${L.url}"><span class="fn">View on GitHub</span></a>`}</div>
       ${extra.length ? `<details class="more-files"><summary>Updater and checksum files (${extra.length})</summary>${extra.map(a => `<a href="${a.url}">${esc(a.name)} (${size(a.size)})</a>`).join('')}</details>` : ''}</div>` : ''}
-    <div class="sec"><h3>Releases</h3>${R.map(r => `<details class="ep" id="rel-${esc(r.tag)}"${r.tag === (relTag || L?.tag) ? ' open' : ''}><summary><span class="tg">${esc(r.tag)}</span><span><h4>${esc(r.name || r.tag)}</h4><small>${esc(gist(r.body))}</small></span><time datetime="${r.date}">${ago(r.date)}</time></summary>
-      <div class="notes">${md(r.body)}<div class="chips">${mainAssets(r).slice(0, 8).map(a => `<a href="${a.url}">${esc(kind(a.name))} ${size(a.size)}</a>`).join('')}<a href="${r.url}" target="_blank" rel="noopener">Release page</a></div></div></details>`).join('')}</div>
+    ${R.length ? `<div class="sec"><h3>Releases</h3>${R.map(r => `<details class="ep" id="rel-${esc(r.tag)}"${r.tag === (relTag || L?.tag) ? ' open' : ''}><summary><span class="tg">${esc(r.tag)}</span><span><h4>${esc(r.name || r.tag)}</h4><small>${esc(gist(r.body))}</small></span><time datetime="${r.date}">${ago(r.date)}</time></summary>
+      <div class="notes">${md(r.body)}<div class="chips">${mainAssets(r).slice(0, 8).map(a => `<a href="${a.url}">${esc(kind(a.name))} ${size(a.size)}</a>`).join('')}<a href="${r.url}" target="_blank" rel="noopener">Release page</a></div></div></details>`).join('')}</div>` : ''}
     <div class="sec"><h3>${p.shots.length ? 'Screenshots' : 'Preview'}</h3><div class="shots">${shots}</div></div>
     <div class="sec"><h3>More like this</h3><div class="similar">${ranked().filter(x => x !== p).map((x, i) => card(x, null, i)).join('')}</div></div>
     <div class="links"><a href="https://github.com/${USER}/${p.repo}" target="_blank" rel="noopener">Source on GitHub</a><a href="https://github.com/${USER}/${p.repo}/releases" target="_blank" rel="noopener">All releases</a><a href="https://github.com/${USER}/${p.repo}/issues" target="_blank" rel="noopener">Report an issue</a></div>
@@ -222,26 +236,38 @@ addEventListener('scroll', () => {
 const status = (cls, txt) => { const s = $('#status'); s.className = 'status ' + cls; $('span', s).textContent = txt; };
 const gh = path => fetch('https://api.github.com/' + path, { headers: { Accept: 'application/vnd.github+json' } }).then(r => { if (!r.ok) throw new Error(r.status); return r.json(); });
 const slim = r => ({ tag: r.tag_name, name: r.name, date: r.published_at, body: r.body || '', url: r.html_url, pre: r.prerelease, assets: r.assets.map(a => ({ name: a.name, size: a.size, dl: a.download_count, url: a.browser_download_url })) });
-// Only public, non-archived repos are shown: a 404 (private) or archived flag hides the app.
-const fetchLive = async () => { const repos = {}; await Promise.all(P.map(async p => {
-  const m = await gh(`repos/${USER}/${p.repo}`).catch(e => { if (e.message === '404') return null; throw e; });
-  if (!m || m.archived || m.private) { repos[p.repo] = { releases: [], languages: {}, hidden: true }; return; }
-  const [r, l] = await Promise.all([gh(`repos/${USER}/${p.repo}/releases?per_page=8`), gh(`repos/${USER}/${p.repo}/languages`)]);
-  repos[p.repo] = { releases: r.filter(x => !x.draft).map(slim), languages: l };
-})); return { generated: new Date().toISOString(), repos }; };
-const sig = d => JSON.stringify(P.map(p => [d.repos[p.repo]?.hidden, (d.repos[p.repo]?.releases || []).map(r => r.tag + r.assets.map(a => a.dl))]));
+// Every public, non-archived, non-fork repo is discovered on each visit, except this site and the portfolio repo.
+const SKIP = /^(projects|.*\.github\.io)$/i;
+const fetchLive = async () => {
+  const list = (await gh(`users/${USER}/repos?type=owner&sort=pushed&per_page=100`)).filter(r => !r.fork && !r.archived && !r.private && !SKIP.test(r.name));
+  const repos = {};
+  await Promise.all(list.map(async r => {
+    const releases = (await gh(`repos/${USER}/${r.name}/releases?per_page=8`)).filter(x => !x.draft).map(slim);
+    const languages = releases.length ? await gh(`repos/${USER}/${r.name}/languages`) : (r.language ? { [r.language]: 1 } : {});
+    repos[r.name] = { releases, languages, meta: { description: r.description, language: r.language, pushed: r.pushed_at, topics: r.topics || [] } };
+  }));
+  return { generated: new Date().toISOString(), repos };
+};
+const sig = d => JSON.stringify(Object.keys(d.repos).sort().map(k => [k, d.repos[k].meta?.description, d.repos[k].releases.map(r => r.tag + r.assets.map(a => a.dl))]));
 const render = () => { buildBillboard(); buildRows(q.value.trim().toLowerCase()); };
 
-(async () => {
-  try { DATA = await (await fetch('data.json')).json(); } catch { /* live fetch below may still work */ }
-  render(); status('', DATA.generated ? 'Snapshot ' + day(DATA.generated) : 'Offline');
-  if (location.hash.startsWith('#app=')) fromHash();
+// Pulls fresh data (cached 15 min per browser) and re-renders only when a release, repo or description changed.
+async function refresh() {
   try {
     let c = null; try { c = JSON.parse(localStorage.getItem('rdk-live')); } catch { /* storage unavailable */ }
     const live = c && Date.now() - c.t < 15 * 60e3 ? c.d : await fetchLive();
     try { localStorage.setItem('rdk-live', JSON.stringify({ t: c && live === c.d ? c.t : Date.now(), d: live })); } catch { /* ignore */ }
-    const changed = sig(live) !== sig(DATA); DATA = live;
+    const changed = sig(live) !== sig(DATA); DATA = live; sync();
     if (changed && !modal.open) render();
     status('live', 'Live from GitHub');
-  } catch { /* rate limited or offline: the snapshot stays on screen */ }
+  } catch { /* rate limited or offline: what is on screen stays */ }
+}
+(async () => {
+  try { DATA = await (await fetch('data.json')).json(); } catch { /* live fetch below may still work */ }
+  sync(); render(); status('', DATA.generated ? 'Snapshot ' + day(DATA.generated) : 'Offline');
+  if (location.hash.startsWith('#app=')) fromHash();
+  await refresh();
+  if (location.hash.startsWith('#app=') && !modal.open) fromHash();
+  setInterval(refresh, 16 * 60e3);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) refresh(); });
 })();
