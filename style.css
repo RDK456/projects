@@ -299,3 +299,11 @@ body { -webkit-tap-highlight-color: transparent; }
   .m-head { bottom: 1rem; }
   .ranked .num { font-size: 6rem; }
 }
+
+/* Orb status indicator (src/main.tsx) */
+.status.has-orb > i { display: none; }
+.status b.orb { display: inline-flex; width: 20px; height: 20px; }
+/* CanvasUI Particle Reveal wrapper: output canvas sits over the billboard, pointer events pass through */
+.pr-wrap { position: relative; }
+.pr-wrap > canvas:not(.pr-out) { display: block; width: 100%; height: min(92vh, 860px); }
+.pr-out { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }

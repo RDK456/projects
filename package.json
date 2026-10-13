@@ -1,0 +1,7 @@
+﻿{
+  "name": "rdk456-projects",
+  "private": true,
+  "scripts": { "build": "esbuild src/main.tsx --bundle --minify --format=iife --jsx=automatic --outfile=dist/enhance.js" },
+  "dependencies": { "react": "^18.3.1", "react-dom": "^18.3.1", "thinking-orbs": "latest" },
+  "devDependencies": { "esbuild": "^0.25.0" }
+}
