@@ -1,0 +1,32 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "overused-font",
+        "value": "instrument sans",
+        "createdAt": "2026-10-24T02:09:04.042Z",
+        "reason": "user confirmed: keep font"
+      },
+      {
+        "rule": "dark-glow",
+        "value": "*",
+        "files": [
+          "index.html"
+        ],
+        "createdAt": "2026-10-24T02:09:04.987Z",
+        "reason": "user confirmed: keep ambient glow"
+      },
+      {
+        "rule": "radial-halo",
+        "value": "*",
+        "files": [
+          "index.html"
+        ],
+        "createdAt": "2026-10-24T02:09:05.550Z",
+        "reason": "user confirmed: keep ambient glow"
+      }
+    ]
+  }
+}

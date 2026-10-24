@@ -116,11 +116,19 @@ function buildRows(q = '') {
 }
 const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } }), { threshold: .12 });
 
+// Page glow follows the app in view; hovering a card previews its colour. Lenis gives inertial scroll.
+const setAmb = c => c && document.documentElement.style.setProperty('--amb', c);
+const lenis = !RM && window.Lenis ? new Lenis({ lerp: .09, anchors: true }) : null;
+if (lenis) { const raf = t => { lenis.raf(t); requestAnimationFrame(raf); }; requestAnimationFrame(raf); }
+if (!RM) document.addEventListener('pointermove', e => {
+  const r = document.documentElement.style; r.setProperty('--px', e.clientX + 'px'); r.setProperty('--py', e.clientY + 'px');
+  if (e.pointerType === 'mouse') { const c = e.target.closest?.('.card'); if (c) r.setProperty('--amb', c.style.getPropertyValue('--a')); }
+}, { passive: true });
+
 function buildBillboard() {
   const ps = ranked().filter(latest).slice(0, 5), bb = $('#billboard');
-  const seeds = Array.from({ length: 7 }, (_, i) => `<i style="left:${8 + i * 13}%;top:${30 + (i * 37) % 55}%;--r:${i * 40}deg;--dx:${(i % 2 ? 1 : -1) * 40}px;--t:${11 + i * 2}s"></i>`).join('');
   bb.innerHTML = ps.map((p, i) => { const l = latest(p); return `<article class="slide${i ? '' : ' on'}" style="--a:${p.a}" aria-hidden="${i ? 'true' : 'false'}">
-    <div class="bd"></div><div class="bd-media">${media(p)}</div><div class="fx">${seeds}</div>
+    <div class="bd"></div><div class="bd-media">${media(p)}</div>
     <div class="copy"><span class="tag" style="--n:1"><b>${fresh(l) ? 'New release' : 'Latest'}</b>${l ? `<span>${esc(l.tag)} ${ago(l.date)}</span>` : ''}</span>
       <h2 style="--n:2" aria-label="${esc(p.name)}">${p.name.split(' ').map((w, k) => `<span class="w" aria-hidden="true" style="--w:${k}">${esc(w)}</span>`).join(' ')}</h2><p style="--n:3">${esc(p.line)} ${esc(p.desc)}</p>
       <div class="btns" style="--n:4"><a class="btn play" href="${best(p)}">${ICON.dl} Download</a><button class="btn info" type="button" data-app="${p.repo}">${ICON.info} More info</button></div></div>
@@ -128,11 +136,12 @@ function buildBillboard() {
     `<div class="pager">${ps.map((p, i) => `<button type="button" aria-label="Show ${esc(p.name)}"${i ? '' : ' class="on"'}><i></i></button>`).join('')}</div>`;
   const slides = [...bb.querySelectorAll('.slide')], dots = [...bb.querySelectorAll('.pager button')];
   let cur = 0, sx = null;
-  const show = n => { cur = n; slides.forEach((s, i) => { s.classList.toggle('on', i === n); s.setAttribute('aria-hidden', i !== n); }); dots.forEach((d, i) => { d.classList.remove('on', 'done'); void d.offsetWidth; if (i < n) d.classList.add('done'); if (i === n) d.classList.add('on'); }); };
+  const show = n => { cur = n; setAmb(ps[n].a); slides.forEach((s, i) => { s.classList.toggle('on', i === n); s.setAttribute('aria-hidden', i !== n); }); dots.forEach((d, i) => { d.classList.remove('on', 'done'); void d.offsetWidth; if (i < n) d.classList.add('done'); if (i === n) d.classList.add('on'); }); };
   dots.forEach((d, i) => { d.onclick = () => show(i); d.addEventListener('animationend', () => show((i + 1) % slides.length)); });
   new IntersectionObserver(([e]) => bb.classList.toggle('paused', !e.isIntersecting)).observe(bb);
   bb.addEventListener('touchstart', e => { sx = e.touches[0].clientX; }, { passive: true });
   bb.addEventListener('touchend', e => { if (sx == null) return; const dx = e.changedTouches[0].clientX - sx; sx = null; if (Math.abs(dx) > 50) show((cur + (dx < 0 ? 1 : -1) + slides.length) % slides.length); });
+  setAmb(ps[0]?.a);
   bb.onpointermove = e => { const x = e.clientX / innerWidth - .5, y = e.clientY / innerHeight - .5; bb.querySelectorAll('.bd-media').forEach(m => m.style.transform = `translate(${-x * 26}px,${-y * 18}px)`); };
 }
 
@@ -164,13 +173,13 @@ function openApp(repo, relTag) {
     <div class="sec"><h3>More like this</h3><div class="similar">${ranked().filter(x => x !== p).map((x, i) => card(x, null, i)).join('')}</div></div>
     <div class="links"><a href="https://github.com/${USER}/${p.repo}" target="_blank" rel="noopener">Source on GitHub</a><a href="https://github.com/${USER}/${p.repo}/releases" target="_blank" rel="noopener">All releases</a><a href="https://github.com/${USER}/${p.repo}/issues" target="_blank" rel="noopener">Report an issue</a></div>
   </div>`;
-  if (!modal.open) { modal.showModal(); document.body.classList.add('noscroll'); }
+  if (!modal.open) { modal.showModal(); document.body.classList.add('noscroll'); lenis?.stop(); }
   modal.scrollTop = 0;
   const h = `#app=${repo}${relTag ? '&rel=' + encodeURIComponent(relTag) : ''}`;
   if (location.hash !== h) history.pushState(null, '', h);
   if (relTag) requestAnimationFrame(() => document.getElementById('rel-' + relTag)?.scrollIntoView({ block: 'center' }));
 }
-modal.addEventListener('close', () => { document.body.classList.remove('noscroll'); if (location.hash.startsWith('#app=')) history.pushState(null, '', location.pathname + location.search); });
+modal.addEventListener('close', () => { document.body.classList.remove('noscroll'); lenis?.start(); if (location.hash.startsWith('#app=')) history.pushState(null, '', location.pathname + location.search); });
 const fromHash = () => { const m = location.hash.match(/^#app=([^&]+)(?:&rel=(.+))?/); if (m) openApp(m[1], m[2] && decodeURIComponent(m[2])); else closeModal(); };
 addEventListener('popstate', fromHash);
 

@@ -36,6 +36,6 @@ if (bb && supportsHtmlInCanvas() && !matchMedia('(prefers-reduced-motion: reduce
   bb.replaceWith(wrap);
   source.appendChild(bb);
   wrap.append(source, output);
-  const fx = createParticleReveal({ source, content: bb, output }, { radius: 260, background: '#0b0709' });
+  const fx = createParticleReveal({ source, content: bb, output }, { radius: 260, background: '#07080c' });
   if (!fx) { wrap.replaceWith(bb); }
 }

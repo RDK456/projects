@@ -9,15 +9,16 @@
 <meta property="og:description" content="Apps I build and keep shipping, with live GitHub releases, screenshots and downloads.">
 <meta property="og:type" content="website">
 <meta name="color-scheme" content="dark">
-<meta name="theme-color" content="#0b0709">
+<meta name="theme-color" content="#07080c">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%8D%89%3C/text%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=Hanken+Grotesk:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wdth,wght@75..100,400..700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<header class="top" id="topbar">
+<div class="ambient" aria-hidden="true"></div><div class="grain" aria-hidden="true"></div><i class="progress" aria-hidden="true"></i>
+<header class="top" id="topbar"><div class="top-in">
   <a class="logo" href="#" aria-label="RDK456 projects, home">RDK456</a>
   <nav id="nav" aria-label="Browse"></nav>
   <div class="tools">
@@ -27,7 +28,7 @@
     </form>
     <span class="status" id="status" role="status" aria-live="polite"><i></i><span>Loading</span></span>
   </div>
-</header>
+</div></header>
 
 <main>
   <section class="billboard" id="billboard" aria-roledescription="carousel" aria-label="Featured apps"></section>
@@ -42,6 +43,7 @@
 <dialog id="modal" aria-label="App details"></dialog>
 <dialog id="lightbox"><button type="button" class="icon-btn close" aria-label="Close image">&times;</button><img alt=""></dialog>
 <noscript><p style="padding:6rem 2rem">This page needs JavaScript to load release data. See <a href="https://github.com/RDK456">github.com/RDK456</a>.</p></noscript>
+<script src="https://cdn.jsdelivr.net/npm/lenis@1.1.20/dist/lenis.min.js"></script>
 <script src="app.js"></script>
 <script src="dist/enhance.js" defer></script>
 </body>
