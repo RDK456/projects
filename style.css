@@ -239,11 +239,19 @@ details.more-files a { display: block; padding: .15rem 0; }
 .shots button { flex: 0 0 auto; border: 1px solid var(--line); padding: 0; background: none; border-radius: 16px; overflow: hidden; scroll-snap-align: start; transition: transform .5s var(--ease); }
 .shots button:hover { transform: scale(1.03); }
 .shots img { height: 280px; width: auto; }
-.shots figure { margin: 0; flex: 0 0 min(100%, 520px); }
+.shots figure { margin: 0; flex: 0 0 auto; scroll-snap-align: start; }
+.shots figure button { display: block; cursor: zoom-in; }
 .shots figcaption { color: var(--soft); font-size: .8rem; margin-top: .4rem; }
 .similar { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 1rem; }
 .similar .info p, .similar .foot-row { display: none; }
 .similar .info h3 { font-size: 1.1rem; }
+.pn { display: grid; grid-template-columns: 1fr auto 1fr; gap: .8rem; align-items: stretch; }
+.pn button { border: 1px solid var(--line-hi); background: none; border-radius: 16px; padding: .8rem 1.1rem; text-align: left; font-weight: 600; transition: background .25s, color .25s, border-color .25s; }
+.pn button:last-child { text-align: right; }
+.pn button:hover { background: var(--ink); color: #fff; border-color: var(--ink); }
+.pn small { display: block; font-weight: 400; opacity: .6; font-size: .75rem; }
+.pn .copy { text-align: center; align-self: center; border-radius: 999px; padding: .6rem 1.1rem; font-weight: 500; }
+@media (max-width: 720px) { .pn { grid-template-columns: 1fr 1fr; } .pn .copy { grid-column: 1 / -1; order: 3; } }
 .links { display: flex; flex-wrap: wrap; gap: .6rem 1.4rem; }
 .links a { color: var(--soft); transition: color .2s; }
 .links a:hover { color: var(--ink); }

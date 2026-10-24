@@ -19,26 +19,50 @@ const P0 = [
     feats: [['Fast, resumable downloads', 'Segmented HTTP and HTTPS with pause, resume, retry and a speed limit.'], ['Batch download', 'Paste many links at once, or a range like file[001-120].jpg.'],
       ['YouTube', 'Videos, playlists, albums and channels, in your choice of quality or as M4A, MP3, Opus or WAV audio.'], ['Torrents', 'Magnet links and .torrent files, with file selection.'],
       ['Internet Archive', 'Browse archive.org and download a whole item in one click.'], ['Browser extensions', 'Chrome and Firefox hand downloads to the app.'], ['Themes', 'Light, dark and AMOLED with nine colour palettes.']],
-    shots: [['Windows app', 'dm-desktop'], ['Download queue', 'dm-android-downloads'], ['Discover', 'dm-android-discover'], ['Internet Archive browser', 'dm-android-archive'], ['YouTube downloader', 'dm-android-youtube']] },
+    shots: [['Windows app', 'dm-desktop'], ['Download queue', 'dm-android-downloads'], ['Discover', 'dm-android-discover'], ['Internet Archive browser', 'dm-android-archive'], ['YouTube downloader', 'dm-android-youtube']], phones: ['dm-android-downloads', 'dm-android-discover', 'dm-android-youtube'] },
   { repo: 'ThermalScope', name: 'ThermalScope', a: '#ff7a3d', plats: ['Windows'],
     line: 'Watch your temperatures and pace your frames.',
     desc: 'A portable Windows hardware monitor with DirectX FPS monitoring and a frame pacer, in one window.',
     feats: [['Monitor', 'CPU and GPU temperature, load, clock and power on heat-ramp dials, with history and a live sensor list.'], ['Frame pacer', 'Limits a game’s frame rate with evenly spaced frames and shows live FPS and frame time.'],
       ['In-game overlay', 'Hotkeys, a tray icon and an overlay, with 32-bit and DirectX 9 games supported.'], ['Self-contained', 'Needs no MSI Afterburner, RTSS or other tool, and no administrator rights to start.'],
-      ['Small updates', 'Delta packages are usually under 1 MB instead of about 68 MB, checked against SHA256 sums.'], ['Honest CPU temperature', 'It never shows a motherboard reading as the CPU die temperature.']], shots: [] },
+      ['Small updates', 'Delta packages are usually under 1 MB instead of about 68 MB, checked against SHA256 sums.'], ['Honest CPU temperature', 'It never shows a motherboard reading as the CPU die temperature.']], hero: 'ts-monitor', shots: [['Monitor: CPU and GPU dials', 'ts-monitor'], ['Frame pacer', 'ts-pacer']] },
   { repo: 'forget-it', name: 'Forget-it', a: '#a37bff', plats: ['Android'],
     line: 'Never miss a renewal, EMI or bill.',
     desc: 'An offline Android tracker for subscriptions, EMIs and loans, bills, and household stock. It scans SMS, email, photos and spreadsheets on the phone.',
     feats: [['Four trackers in one', 'Subscriptions, EMIs and loans, bills and utilities, and household stock.'], ['Scan anything', 'Take a photo or share a screenshot. Text is read on the phone and sorted into the right tracker for you to review.'],
       ['Payment detection', 'Optional SMS and email alerts become transactions, with ads, promos and failed payments filtered out.'], ['Voice entry for stock', 'Say “2 litres milk” or “half kg sugar”.'],
       ['Reminders and widget', 'Several reminders per item, snooze, a weekly summary and a home-screen widget.'], ['Offline by default', 'No account needed. The network is used only for the optional Gmail sync.'],
-      ['Backups', 'CSV and Excel import and export, plus a full backup that includes photos.']], shots: [] },
+      ['Backups', 'CSV and Excel import and export, plus a full backup that includes photos.']], phones: ['fi-overview', 'fi-subs', 'fi-money'], shots: [['Overview', 'fi-overview'], ['Money and budget', 'fi-money'], ['Subscriptions', 'fi-subs'], ['Loans and EMIs', 'fi-loans'], ['Household stock', 'fi-stock']] },
   { repo: 'appDash', name: 'AppDash', a: '#34d3a0', plats: ['Android', 'Windows'],
     line: 'See what is installed, used and taking space.',
     desc: 'See every app on your PC or phone: what is installed, what you actually use, how much space it takes, and what can be updated.',
     feats: [['Every app in one list', 'Installed and portable apps on Windows, and your apps and system apps on Android, with sizes.'], ['What you actually use', 'Usage from Windows launch history and Android screen time, so you can remove rarely used apps in bulk.'],
       ['Updates', 'Windows updates through winget and Chocolatey. On Android: Play Store, F-Droid and GitHub updates.'], ['Disk space by file type', 'Videos, archives, documents and the largest files, with Recycle Bin or permanent delete.'],
-      ['Small updates', 'The Windows app updates itself with small delta packages.']], shots: [] }
+      ['Small updates', 'The Windows app updates itself with small delta packages.']], phones: ['ad-android-home', 'ad-android-apps', 'ad-android-updates'], shots: [['Windows disks', 'ad-win-disks'], ['Android home', 'ad-android-home'], ['Android apps', 'ad-android-apps'], ['Android updates', 'ad-android-updates']] },
+  { repo: 'openCam', name: 'openCam', a: '#2fb6c9', plats: ['Android', 'Windows'],
+    line: 'Your phone as a webcam for any Windows app.',
+    desc: 'Use an Android phone as a webcam for Zoom, Teams, Chrome and OBS, over USB or Wi-Fi. No resolution cap and no watermark.',
+    feats: [['Every Windows app sees it', 'A real Windows 11 virtual camera, so no OBS plugin is needed.'], ['USB or Wi-Fi', 'USB through adb, or Wi-Fi with automatic discovery or a 5-digit pairing code.'], ['Up to 4K at 60 fps', 'Hardware H.264 encoding on the phone, with no time limit.'],
+      ['Full camera control', 'Zoom, flip, torch, focus, exposure, stabilisation, Pro mode and Portrait blur, from either side.'], ['Battery friendly', 'The camera runs only while something is watching.'], ['Hands-off', 'Starts with Windows, reconnects by itself and updates from GitHub Releases.']],
+    hero: 'oc-live', shots: [['Windows live feed', 'oc-live'], ['Android controls', 'oc-phone'], ['Finding a phone', 'oc-connect'], ['Settings', 'oc-settings']] },
+  { repo: '1-stream', name: '1-stream', a: '#e5484d', plats: ['Windows'],
+    line: 'A Windows media player that streams from your plugins.',
+    desc: 'A Windows desktop media player with a Netflix-style interface. It ships with no content sources: you install the plugins you want. Based on CloudStream.',
+    feats: [['Plugins', 'Plain JVM jars in isolated class loaders, plus converted Android plugins. Every download is SHA-256 verified.'], ['Library and history', 'Add titles to a library, resume where you stopped and see Continue watching on Home.'], ['Built-in player', 'libVLC with HLS and DASH, speed, source, audio and subtitle settings, and full keyboard control.'],
+      ['Downloads', 'A quality picker for direct files and HLS.'], ['Scales down', 'Works at any window size, down to 420 px wide.'], ['Small updates', 'Delta patches for the app, and plugins update every 6 hours.']],
+    hero: '1s-home', shots: [['Home', '1s-home'], ['Title page', '1s-details'], ['Playback settings', '1s-player-settings'], ['Plugins', '1s-plugins'], ['Player shortcuts', '1s-player-shortcuts']] },,
+  { repo: 'open-dock', name: 'Open Dock', a: '#7c6cff', plats: ['Android', 'Windows', 'macOS'],
+    line: 'Your phone as a control deck for your PC.',
+    desc: 'A phone control deck with a local PC companion. Pair by QR code on the same Wi-Fi, then send media keys, shortcuts and voice commands. A modified fork of Freeze.',
+    feats: [['Pair by QR code', 'The desktop app shows a code; scan it on the phone over the same Wi-Fi.'], ['Media keys and shortcuts', 'Control playback and trigger shortcuts on Windows or macOS.'], ['Hands-free voice', 'Say "hey dock" on the PC, with offline voice when run as admin.'], ['Per-look layouts', 'Separate layouts and floating navigation on the phone.'], ['Delta updates', 'After the first install it downloads only what changed.']], shots: [] },
+  { repo: 'open-connect', name: 'Open Connect', a: '#3ba0ff', plats: ['Android', 'Windows'],
+    line: 'Move files between your phone and PC over Wi-Fi.',
+    desc: 'Browse and share files between Android and Windows on the same network, with no cable and no account.',
+    feats: [['Send to…', 'Push files or a selection straight into another device’s Downloads, with progress and a toast on the receiver.'], ['Stays available', 'A persistent notification shows the address and device count, and sharing keeps running after the app is swiped away.'], ['Battery aware', 'Stops 15 seconds after leaving Wi-Fi when the app is not on screen.'], ['In-app updates', 'The Windows app updates itself.']], shots: [] },
+  { repo: 'bookmark', name: 'Bookmark', a: '#ffb02e', plats: ['Web'],
+    line: 'A bookmark manager with social previews.',
+    desc: 'A web bookmark manager that fetches rich previews for saved links, with a browser extension and a Supabase backend.',
+    feats: [['Social previews', 'Saved links show a title, image and description pulled from the page.'], ['Browser extension', 'Save the current page in one click.'], ['Source only', 'No release yet. Run it from the repository.']], shots: [] }
 ];
 const CUR = Object.fromEntries(P0.map(p => [p.repo, p]));
 let P = [];
@@ -46,19 +70,8 @@ const LANG = { Kotlin: '#a97bff', JavaScript: '#f1e05a', PowerShell: '#5391fe', 
 
 /* ---------- illustrations (not screenshots) for apps without public screenshots ---------- */
 const win = (inner, label) => `<svg viewBox="0 0 520 320" role="img" aria-label="${label}"><rect x="4" y="4" width="512" height="312" rx="14" fill="#1a1216" stroke="#ffffff30" stroke-width="2"/><path d="M4 18a14 14 0 0 1 14-14h484a14 14 0 0 1 14 14v20H4Z" fill="#2a1e24"/><circle cx="26" cy="21" r="5" fill="#ff5d7a"/><circle cx="44" cy="21" r="5" fill="#e0a526"/><circle cx="62" cy="21" r="5" fill="#55c47f"/>${inner}</svg>`;
-const dial = (cx, cy, v, c, t, l) => `<circle cx="${cx}" cy="${cy}" r="46" fill="none" stroke="#ffffff1a" stroke-width="11"/><circle cx="${cx}" cy="${cy}" r="46" fill="none" stroke="${c}" stroke-width="11" stroke-linecap="round" pathLength="100" stroke-dasharray="${v} 100" transform="rotate(-90 ${cx} ${cy})"><animate attributeName="stroke-dasharray" from="0 100" to="${v} 100" dur="1.8s" fill="freeze" calcMode="spline" keySplines=".2 .9 .3 1" keyTimes="0;1"/></circle><text x="${cx}" y="${cy + 6}" text-anchor="middle" fill="#fff" font-size="22" font-weight="700" font-family="sans-serif">${t}</text><text x="${cx}" y="${cy + 70}" text-anchor="middle" fill="#b7a9ad" font-size="12" font-family="sans-serif">${l}</text>`;
-const bar = (x, y, w, h, c, d = 0) => `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="${h / 2}" fill="${c}"><animate attributeName="width" from="0" to="${w}" dur="1.4s" begin="${d}s" fill="freeze" calcMode="spline" keySplines=".2 .9 .3 1" keyTimes="0;1"/></rect>`;
-const ART = {
-  ThermalScope: () => win(dial(110, 130, 62, '#ff7a3d', '62°', 'CPU') + dial(250, 130, 48, '#ffb347', '48°', 'GPU') +
-    [['Load', 41], ['Clock', 78], ['Power', 55]].map(([n, v], i) => `<text x="345" y="${88 + i * 36}" fill="#b7a9ad" font-size="12" font-family="sans-serif">${n}</text>` + bar(345, 94 + i * 36, 140, 8, '#ffffff1a') + bar(345, 94 + i * 36, v * 1.4, 8, '#ff7a3d', .2 * i)).join('') +
-    `<polyline points="30,285 70,270 110,278 150,255 190,272 230,262 270,280 310,258 350,268 390,252 430,270 490,260" fill="none" stroke="#55c47f" stroke-width="3" stroke-linejoin="round" pathLength="100" stroke-dasharray="100" stroke-dashoffset="100"><animate attributeName="stroke-dashoffset" from="100" to="0" dur="2.2s" fill="freeze"/></polyline><text x="30" y="238" fill="#b7a9ad" font-size="12" font-family="sans-serif">Frame time</text>`, 'Illustration of ThermalScope temperature dials and a frame-time graph'),
-  'forget-it': () => win(`<image href="img/forget-it-icon.png" x="34" y="70" width="120" height="120"/><text x="94" y="225" text-anchor="middle" fill="#fff" font-size="18" font-weight="700" font-family="sans-serif">Forget-it</text>` +
-    [['Subscriptions', 190, '#a37bff'], ['EMIs and loans', 130, '#ff7a9a'], ['Bills', 160, '#ffb347'], ['Stock', 100, '#55c47f']].map(([n, w, c], i) => `<rect x="190" y="${62 + i * 62}" width="300" height="50" rx="10" fill="#2a1e24"/><rect x="190" y="${62 + i * 62}" width="5" height="50" rx="2" fill="${c}"/><text x="208" y="${92 + i * 62}" fill="#fff" font-size="14" font-family="sans-serif">${n}</text>` + bar(330, 82 + i * 62, w * .85, 8, c, .15 * i)).join(''), 'Illustration of the four Forget-it trackers'),
-  appDash: () => win([['Videos', 250, '#34d3a0'], ['Archives', 170, '#5b8cff'], ['Documents', 100, '#ffb347'], ['Other', 60, '#ff7a9a']].map(([n, w, c], i) => `<text x="34" y="${84 + i * 38}" fill="#b7a9ad" font-size="13" font-family="sans-serif">${n}</text>` + bar(120, 74 + i * 38, 360, 12, '#ffffff14') + bar(120, 74 + i * 38, w * 1.4, 12, c, .15 * i)).join('') +
-    ['Used often', 'Sometimes', 'Rarely'].map((n, i) => `<rect x="${34 + i * 156}" y="240" width="146" height="52" rx="10" fill="#2a1e24"/><circle cx="${58 + i * 156}" cy="266" r="7" fill="${['#34d3a0', '#ffb347', '#ff7a9a'][i]}"/><text x="${74 + i * 156}" y="271" fill="#fff" font-size="13" font-family="sans-serif">${n}</text>`).join(''), 'Illustration of AppDash storage bars and usage groups')
-};
 const genericArt = p => win(`<text x="260" y="190" text-anchor="middle" fill="${p.a}" font-size="130" font-weight="800" font-family="sans-serif">${esc(p.name[0])}</text><text x="260" y="245" text-anchor="middle" fill="#b7a9ad" font-size="16" font-family="sans-serif">${esc(p.name)}</text>`, `Illustration for ${esc(p.name)}`);
-const media = p => p.repo === '1-download-manager' ? `<div class="phones">${['downloads', 'discover', 'youtube'].map(f => `<img src="img/dm-android-${f}.png" alt="" loading="lazy">`).join('')}</div>` : (ART[p.repo] || genericArt)(p);
+const media = p => p.phones ? `<div class="phones">${p.phones.map(f => `<img src="img/${f}.png" alt="" loading="lazy">`).join('')}</div>` : p.hero ? `<img src="img/${p.hero}.png" alt="" loading="lazy">` : genericArt(p);
 
 /* ---------- helpers ---------- */
 const rtf = new Intl.RelativeTimeFormat('en', { numeric: 'auto' });
@@ -266,7 +279,8 @@ function openApp(repo, relTag) {
   const dls = R.reduce((n, r) => n + r.assets.reduce((m, a) => m + (a.dl || 0), 0), 0);
   const as = mainAssets(L), extra = (L?.assets || []).filter(a => isMeta(a.name));
   const top = Object.entries(langs).sort((a, b) => b[1] - a[1]);
-  const shots = p.shots.length ? p.shots.map(([c, f]) => `<button type="button" data-img="img/${f}.png" aria-label="Enlarge ${esc(c)}"><img src="img/${f}.png" alt="${esc(c)}" loading="lazy"></button>`).join('') : `<figure>${media(p)}<figcaption>Illustration, not a screenshot.</figcaption></figure>`;
+  const shots = p.shots.length ? p.shots.map(([c, f]) => `<figure><button type="button" data-img="img/${f}.png" aria-label="Enlarge ${esc(c)}"><img src="img/${f}.png" alt="${esc(c)}" loading="lazy"></button><figcaption>${esc(c)}</figcaption></figure>`).join('') : '';
+  const rk = ranked(), i = rk.indexOf(p), nb = [rk[(i + rk.length - 1) % rk.length], rk[(i + 1) % rk.length]];
   modal.style.setProperty('--a', p.a);
   modal.innerHTML = `<button type="button" class="icon-btn close" aria-label="Close details">&times;</button>
   <div class="m-media"><div class="bd"></div><div class="bd-media">${media(p)}</div>
@@ -282,8 +296,9 @@ function openApp(repo, relTag) {
       ${extra.length ? `<details class="more-files"><summary>Updater and checksum files (${extra.length})</summary>${extra.map(a => `<a href="${a.url}">${esc(a.name)} (${size(a.size)})</a>`).join('')}</details>` : ''}</div>` : ''}
     ${R.length ? `<div class="sec"><h3>Releases</h3>${R.map(r => `<details class="ep" id="rel-${esc(r.tag)}"${r.tag === (relTag || L?.tag) ? ' open' : ''}><summary><span class="tg">${esc(r.tag)}</span><span><h4>${esc(r.name || r.tag)}</h4><small>${esc(gist(r.body))}</small></span><time datetime="${r.date}">${ago(r.date)}</time></summary>
       <div class="notes">${md(r.body)}<div class="chips">${mainAssets(r).slice(0, 8).map(a => `<a href="${a.url}">${esc(kind(a.name))} ${size(a.size)}</a>`).join('')}<a href="${r.url}" target="_blank" rel="noopener">Release page</a></div></div></details>`).join('')}</div>` : ''}
-    <div class="sec"><h3>${p.shots.length ? 'Screenshots' : 'Preview'}</h3><div class="shots">${shots}</div></div>
+    ${shots ? `<div class="sec"><h3>Screenshots</h3><div class="shots">${shots}</div></div>` : ''}
     <div class="sec"><h3>More like this</h3><div class="similar">${ranked().filter(x => x !== p).map(x => card(x)).join('')}</div></div>
+    <nav class="pn" aria-label="Other apps"><button type="button" data-app="${nb[0].repo}"><small>Previous</small>${esc(nb[0].name)}</button><button type="button" class="copy" data-copy>Copy link</button><button type="button" data-app="${nb[1].repo}"><small>Next</small>${esc(nb[1].name)}</button></nav>
     <div class="links"><a href="https://github.com/${USER}/${p.repo}" target="_blank" rel="noopener">Source on GitHub</a><a href="https://github.com/${USER}/${p.repo}/releases" target="_blank" rel="noopener">All releases</a><a href="https://github.com/${USER}/${p.repo}/issues" target="_blank" rel="noopener">Report an issue</a></div>
   </div>`;
   if (!modal.open) {
@@ -311,6 +326,7 @@ document.addEventListener('click', e => {
   if (t === modal) return closeModal();
   if (t.closest('#lightbox .close') || t === lightbox) return lightbox.close();
   if (t.closest('#modal > .close')) return closeModal();
+  if (t.closest('[data-copy]')) { navigator.clipboard?.writeText(location.href); t.textContent = 'Copied'; return; }
   const im = t.closest('[data-img]'); if (im) { $('img', lightbox).src = im.dataset.img; return lightbox.showModal(); }
   const chip = t.closest('.chip'); if (chip) {
     view.plat = chip.dataset.plat; $$('.chip').forEach(c => { c.classList.toggle('on', c === chip); c.setAttribute('aria-pressed', c === chip); }); return applyFilter(true);
