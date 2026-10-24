@@ -1,11 +1,14 @@
 'use strict';
 const USER = 'RDK456';
 const $ = (s, r = document) => r.querySelector(s);
-const RM = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+// Motion is on by default. The OS reduced-motion flag is often set by accident, so the header switch decides (saved in this browser).
+const RM = (() => { try { return localStorage.getItem('rdk-motion') === 'off'; } catch { return false; } })();
+document.documentElement.classList.toggle('calm', RM);
+const G = window.gsap && window.ScrollTrigger && window.Flip; // every animation is optional: the page works without GSAP
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const svg = d => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
-const ICON = { dl: svg('<path d="M12 3v12m0 0-5-5m5 5 5-5M4 20h16"/>'), info: svg('<circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.01"/>'),
-  chev: svg('<path d="m6 9 6 6 6-6"/>'), l: svg('<path d="m15 5-7 7 7 7"/>'), r: svg('<path d="m9 5 7 7-7 7"/>') };
+const ICON = { dl: svg('<path d="M12 3v12m0 0-5-5m5 5 5-5M4 20h16"/>'), info: svg('<circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.01"/>'), go: svg('<path d="M7 17 17 7M8 7h9v9"/>') };
 
 /* ---------- content that GitHub does not provide ---------- */
 // Hand-written details for the apps I curated. Any other public repo is picked up automatically (see auto()).
@@ -87,62 +90,172 @@ const mainAssets = r => (r?.assets || []).filter(a => !isMeta(a.name) && kind(a.
 const best = p => { const r = latest(p), as = mainAssets(r), pick = as.find(a => kind(a.name) === (dev || 'Windows') && /setup|\.msi|universal/i.test(a.name)) || as.find(a => kind(a.name) === dev) || as[0]; return pick?.url || r?.url || `https://github.com/${USER}/${p.repo}`; };
 const fresh = r => r && Date.now() - new Date(r.date) < 14 * 864e5;
 
-/* ---------- cards, rows, billboard ---------- */
-const card = (p, r, i) => { const l = r || latest(p); return `<div class="card" tabindex="0" role="button" data-app="${p.repo}"${r ? ` data-rel="${esc(r.tag)}"` : ''} style="--a:${p.a};--i:${i}" aria-label="${esc(p.name)} ${l ? esc(l.tag) : ''}">
-  <div class="thumb">${media(p)}<span class="t">${esc(p.name)}${r ? ' ' + esc(r.tag) : ''}</span>${fresh(l) ? '<span class="new">Recently added</span>' : ''}</div>
-  <div class="peek"><strong>${esc(r ? gist(r.body) : p.line)}</strong><small>${l ? `<b>${esc(l.tag)}</b><span>${ago(l.date)}</span>` : ''}<span>${p.plats.join(', ')}</span></small><span class="go">${ICON.chev}</span></div></div>`; };
+/* ---------- smooth scroll, header, progress, intro, hero ---------- */
+// Reduced motion keeps fades and drops movement, pinning, cursor effects and the intro.
+const mv = n => RM ? 0 : n;
+const FINE = matchMedia('(pointer: fine)').matches;
+const lenis = !RM && window.Lenis ? new Lenis({ lerp: .09, anchors: true }) : null;
+if (G) {
+  gsap.registerPlugin(ScrollTrigger, Flip);
+  if (lenis) { lenis.on('scroll', ScrollTrigger.update); gsap.ticker.add(t => lenis.raf(t * 1000)); gsap.ticker.lagSmoothing(0); }
+  gsap.to('.progress', { scaleX: 1, ease: 'none', scrollTrigger: { start: 0, end: 'max', scrub: .3 } });
+} else if (lenis) { const raf = t => { lenis.raf(t); requestAnimationFrame(raf); }; requestAnimationFrame(raf); }
+addEventListener('scroll', () => $('#topbar').classList.toggle('solid', scrollY > 20), { passive: true });
 
-function buildRows(q = '') {
-  const lang = p => Object.keys(DATA.repos[p.repo]?.languages || {}).join(' ');
-  const ps = ranked().filter(p => !q || [p.name, p.line, p.desc, p.plats.join(' '), lang(p)].join(' ').toLowerCase().includes(q));
-  const feed = ps.flatMap(p => rel(p).map(r => ({ p, r }))).sort((a, b) => new Date(b.r.date) - new Date(a.r.date)).slice(0, 14);
-  const defs = [['new', 'New releases', feed.map(({ p, r }, i) => card(p, r, i))],
-    ['recent', 'Recently updated', ps.map((p, i) => `<div class="ranked"><span class="num" aria-hidden="true">${i + 1}</span>${card(p, null, i)}</div>`)],
-    ['android', 'On Android', ps.filter(p => p.plats.includes('Android')).map((p, i) => card(p, null, i))],
-    ['windows', 'On Windows', ps.filter(p => p.plats.includes('Windows')).map((p, i) => card(p, null, i))],
-    ['browser', 'Browser extensions', ps.filter(p => p.plats.includes('Browser')).map((p, i) => card(p, null, i))],
-    ['source', 'Source projects', ps.filter(p => !latest(p)).map((p, i) => card(p, null, i))]].filter(d => d[2].length);
-  $('#rows').innerHTML = defs.map(([id, t, items]) => `<section class="row" id="row-${id}"><h2>${t}<span class="count">${items.length}</span></h2><div class="scroller"><button class="arrow l" hidden aria-label="Scroll left">${ICON.l}</button><div class="strip">${items.join('')}</div><button class="arrow r" aria-label="Scroll right">${ICON.r}</button></div></section>`).join('');
-  $('#empty').hidden = defs.length > 0;
-  $('#nav').innerHTML = '<a href="#">Home</a>' + defs.filter(d => d[0] !== 'recent').map(d => `<a href="#row-${d[0]}">${d[1]}</a>`).join('');
-  document.querySelectorAll('.row').forEach(row => {
-    const st = $('.strip', row), L = $('.arrow.l', row), R = $('.arrow.r', row);
-    const upd = () => { L.hidden = st.scrollLeft < 8; R.hidden = st.scrollLeft + st.clientWidth > st.scrollWidth - 8; };
-    st.addEventListener('scroll', upd, { passive: true }); upd();
-    L.onclick = () => st.scrollBy({ left: -st.clientWidth * .85, behavior: 'smooth' });
-    R.onclick = () => st.scrollBy({ left: st.clientWidth * .85, behavior: 'smooth' });
-    io.observe(row);
+const mo = $('#motion');
+mo.setAttribute('aria-pressed', !RM); mo.lastElementChild.textContent = RM ? 'Motion off' : 'Motion on';
+mo.onclick = () => { try { localStorage.setItem('rdk-motion', RM ? 'on' : 'off'); } catch { /* storage unavailable */ } location.reload(); };
+
+const split = el => { el.innerHTML = el.textContent.split(' ').map(w => `<span class="ln"><span>${esc(w)}</span></span>`).join(' '); };
+split($('#h1')); $$('.head h2').forEach(split);
+const heroIn = () => {
+  if (!G) return;
+  gsap.timeline({ defaults: { ease: 'power4.out' } })
+    .from('#topbar .bar > *', { y: mv(-20), opacity: 0, duration: .9, stagger: .06 })
+    .from('#h1 .ln > span', { yPercent: mv(115), opacity: RM ? 0 : 1, duration: 1.4, stagger: .08 }, .05)
+    .from('.lede, .stats > div', { y: mv(26), opacity: 0, duration: 1, stagger: .08 }, .55)
+    .from('#marquee', { opacity: 0, y: mv(30), duration: 1 }, .8);
+};
+const intro = $('#intro');
+if (G && !RM) {
+  lenis?.stop(); const n = $('#intro-n'), o = { v: 0 };
+  const done = () => { intro.remove(); lenis?.start(); };
+  gsap.timeline({ onComplete: done })
+    .to(o, { v: 100, duration: 1.1, ease: 'power2.inOut', onUpdate: () => { n.textContent = Math.round(o.v); } })
+    .to('.intro-t', { yPercent: -110, opacity: 0, duration: .6, ease: 'power3.in' }, '-=.15')
+    .to(intro, { yPercent: -100, duration: .9, ease: 'power4.inOut' }, '-=.2')
+    .add(heroIn, '-=.6');
+  setTimeout(() => intro.isConnected && done(), 5000); // never trap the page behind the curtain
+} else { intro.remove(); heroIn(); }
+
+/* ---------- ambient mesh, cursor, magnetic buttons, card tilt ---------- */
+const meshColors = ps => $$('.mesh i').forEach((el, i) => ps[i] && el.style.setProperty('--c', ps[i].a));
+if (G && !RM) {
+  const drift = el => gsap.to(el, { x: () => gsap.utils.random(-.25 * innerWidth, .25 * innerWidth), y: () => gsap.utils.random(-.2 * innerHeight, .2 * innerHeight), scale: () => gsap.utils.random(.8, 1.3), duration: () => gsap.utils.random(9, 16), ease: 'sine.inOut', onComplete: () => drift(el) });
+  $$('.mesh i').forEach(drift);
+}
+if (G && !RM && FINE) {
+  document.body.classList.add('has-cursor');
+  const c = $('#cursor'), xTo = gsap.quickTo(c, 'x', { duration: .35, ease: 'power3' }), yTo = gsap.quickTo(c, 'y', { duration: .35, ease: 'power3' });
+  addEventListener('pointermove', e => { c.classList.add('on'); xTo(e.clientX); yTo(e.clientY); });
+  document.addEventListener('pointerover', e => c.classList.toggle('hot', !!e.target.closest?.('a, button, [data-app], input')));
+  document.addEventListener('pointermove', e => {
+    const b = e.target.closest?.('.btn'), k = e.target.closest?.('.card');
+    if (b) { const r = b.getBoundingClientRect(); gsap.to(b, { x: (e.clientX - r.left - r.width / 2) * .25, y: (e.clientY - r.top - r.height / 2) * .35, duration: .4, ease: 'power3.out', overwrite: 'auto' }); }
+    if (k) { const r = k.getBoundingClientRect(), x = (e.clientX - r.left) / r.width - .5, y = (e.clientY - r.top) / r.height - .5; gsap.to($('.thumb', k), { rotationY: x * 12, rotationX: -y * 12, transformPerspective: 800, duration: .5, ease: 'power3.out', overwrite: 'auto' }); }
+  });
+  document.addEventListener('pointerout', e => {
+    const b = e.target.closest?.('.btn'), k = e.target.closest?.('.card');
+    if (b && !b.contains(e.relatedTarget)) gsap.to(b, { x: 0, y: 0, duration: .9, ease: 'elastic.out(1, .4)' });
+    if (k && !k.contains(e.relatedTarget)) gsap.to($('.thumb', k), { rotationX: 0, rotationY: 0, duration: .7, ease: 'power3.out' });
   });
 }
-const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } }), { threshold: .12 });
 
-// Page glow follows the app in view; hovering a card previews its colour. Lenis gives inertial scroll.
-const setAmb = c => c && document.documentElement.style.setProperty('--amb', c);
-const lenis = !RM && window.Lenis ? new Lenis({ lerp: .09, anchors: true }) : null;
-if (lenis) { const raf = t => { lenis.raf(t); requestAnimationFrame(raf); }; requestAnimationFrame(raf); }
-if (!RM) document.addEventListener('pointermove', e => {
-  const r = document.documentElement.style; r.setProperty('--px', e.clientX + 'px'); r.setProperty('--py', e.clientY + 'px');
-  if (e.pointerType === 'mouse') { const c = e.target.closest?.('.card'); if (c) r.setProperty('--amb', c.style.getPropertyValue('--a')); }
-}, { passive: true });
+/* ---------- stats ---------- */
+const countUp = (el, n) => {
+  if (!G || el.dataset.done) { el.textContent = n.toLocaleString(); return; }
+  el.dataset.done = 1; const o = { v: 0 };
+  gsap.to(o, { v: n, duration: 1.8, ease: 'power3.out', delay: RM ? 0 : 2.2, onUpdate: () => { el.textContent = Math.round(o.v).toLocaleString(); } });
+};
+function buildStats() {
+  const dls = P.reduce((n, p) => n + rel(p).reduce((m, r) => m + r.assets.reduce((k, a) => k + (a.dl || 0), 0), 0), 0);
+  const rels = P.reduce((n, p) => n + rel(p).length, 0);
+  const box = $('#stats');
+  if (!box.children.length) box.innerHTML = [['Apps', 'apps'], ['Releases shipped', 'rels'], ['Downloads', 'dls']].map(([l, k]) => `<div><dt>${l}</dt><dd data-k="${k}">0</dd></div>`).join('');
+  countUp($('[data-k=apps]'), P.length); countUp($('[data-k=rels]'), rels); countUp($('[data-k=dls]'), dls);
+}
 
-function buildBillboard() {
-  const ps = ranked().filter(latest).slice(0, 5), bb = $('#billboard');
-  bb.innerHTML = ps.map((p, i) => { const l = latest(p); return `<article class="slide${i ? '' : ' on'}" style="--a:${p.a}" aria-hidden="${i ? 'true' : 'false'}">
-    <div class="bd"></div><div class="bd-media">${media(p)}</div>
-    <div class="copy"><span class="tag" style="--n:1"><b>${fresh(l) ? 'New release' : 'Latest'}</b>${l ? `<span>${esc(l.tag)} ${ago(l.date)}</span>` : ''}</span>
-      <h2 style="--n:2" aria-label="${esc(p.name)}">${p.name.split(' ').map((w, k) => `<span class="w" aria-hidden="true" style="--w:${k}">${esc(w)}</span>`).join(' ')}</h2><p style="--n:3">${esc(p.line)} ${esc(p.desc)}</p>
-      <div class="btns" style="--n:4"><a class="btn play" href="${best(p)}">${ICON.dl} Download</a><button class="btn info" type="button" data-app="${p.repo}">${ICON.info} More info</button></div></div>
-    <div class="rate">${p.plats.join('   ')}</div></article>`; }).join('') +
-    `<div class="pager">${ps.map((p, i) => `<button type="button" aria-label="Show ${esc(p.name)}"${i ? '' : ' class="on"'}><i></i></button>`).join('')}</div>`;
-  const slides = [...bb.querySelectorAll('.slide')], dots = [...bb.querySelectorAll('.pager button')];
-  let cur = 0, sx = null;
-  const show = n => { cur = n; setAmb(ps[n].a); slides.forEach((s, i) => { s.classList.toggle('on', i === n); s.setAttribute('aria-hidden', i !== n); }); dots.forEach((d, i) => { d.classList.remove('on', 'done'); void d.offsetWidth; if (i < n) d.classList.add('done'); if (i === n) d.classList.add('on'); }); };
-  dots.forEach((d, i) => { d.onclick = () => show(i); d.addEventListener('animationend', () => show((i + 1) % slides.length)); });
-  new IntersectionObserver(([e]) => bb.classList.toggle('paused', !e.isIntersecting)).observe(bb);
-  bb.addEventListener('touchstart', e => { sx = e.touches[0].clientX; }, { passive: true });
-  bb.addEventListener('touchend', e => { if (sx == null) return; const dx = e.changedTouches[0].clientX - sx; sx = null; if (Math.abs(dx) > 50) show((cur + (dx < 0 ? 1 : -1) + slides.length) % slides.length); });
-  setAmb(ps[0]?.a);
-  bb.onpointermove = e => { const x = e.clientX / innerWidth - .5, y = e.clientY / innerHeight - .5; bb.querySelectorAll('.bd-media').forEach(m => m.style.transform = `translate(${-x * 26}px,${-y * 18}px)`); };
+/* ---------- marquee: app names, speeds up with scroll velocity ---------- */
+let mq;
+function buildMarquee() {
+  const ps = ranked(), base = []; if (!ps.length) return;
+  while (base.length < 8) base.push(...ps);
+  const half = base.map(p => `<span style="--c:${p.a}">${esc(p.name)}</span>`).join('');
+  $('#track').innerHTML = half + half;
+  if (!G || RM || mq) return;
+  mq = gsap.to('#track', { xPercent: -50, repeat: -1, duration: 40, ease: 'none' });
+  let back; ScrollTrigger.create({ onUpdate: s => { mq.timeScale(1 + gsap.utils.clamp(-10, 10, s.getVelocity() / 140)); back?.kill(); back = gsap.to(mq, { timeScale: 1, duration: .9, delay: .05 }); } });
+}
+
+/* ---------- showcase: pinned, scroll-scrubbed tour of the five newest apps ---------- */
+let featPs = [], mm;
+const slideHTML = p => { const l = latest(p); return `<div class="s-in"><div class="s-copy"><span class="tag"><b>${fresh(l) ? 'New release' : 'Latest'}</b>${l ? `<span>${esc(l.tag)}</span><span>${ago(l.date)}</span>` : ''}</span>
+  <h2>${esc(p.name)}</h2><p>${esc(p.line)}${p.desc === p.line ? '' : ' ' + esc(p.desc)}</p>
+  <div class="btns"><a class="btn play" href="${best(p)}">${ICON.dl} Download</a><button class="btn info" type="button" data-app="${p.repo}">${ICON.info} More info</button></div></div><div class="s-art">${media(p)}</div></div>`; };
+function buildShowcase() {
+  featPs = ranked().filter(latest).slice(0, 5);
+  const s = $('#showcase'); mm?.revert();
+  if (!featPs.length) { s.hidden = true; return; } s.hidden = false;
+  s.style.setProperty('--a', featPs[0].a);
+  s.innerHTML = `<div class="s-stage">${featPs.map((p, i) => `<div class="s-slide" data-i="${i}" style="--a:${p.a}">${slideHTML(p)}</div>`).join('')}</div>
+    <div class="s-dots">${featPs.map((p, i) => `<button type="button" class="dot${i ? '' : ' on'}" data-i="${i}" aria-label="Show ${esc(p.name)}"><span>${esc(p.name)}</span></button>`).join('')}</div>`;
+  if (!G) return;
+  mm = gsap.matchMedia();
+  mm.add('(min-width: 901px) and (min-height: 620px)', () => {
+    if (RM) { s.classList.add('stack'); gsap.from('.s-slide', { opacity: 0, duration: .8, stagger: .1, scrollTrigger: { trigger: s, start: 'top 80%', once: true } }); return () => s.classList.remove('stack'); }
+    const slides = $$('.s-slide', s), n = slides.length, dots = $$('.dot', s);
+    s.classList.add('pinned'); gsap.set(slides.slice(1), { autoAlpha: 0 });
+    const tl = gsap.timeline({ defaults: { ease: 'none' }, scrollTrigger: { trigger: s, start: 'top top', end: () => '+=' + (n - 1) * innerHeight * .85, pin: true, scrub: .7, anticipatePin: 1, invalidateOnRefresh: true,
+      snap: n > 1 ? { snapTo: 1 / (n - 1), duration: { min: .25, max: .7 }, delay: .04, ease: 'power2.inOut' } : false,
+      onUpdate: self => { const i = Math.round(self.progress * (n - 1)); dots.forEach((d, k) => d.classList.toggle('on', k === i)); } } });
+    for (let i = 1; i < n; i++) {
+      const at = i - 1;
+      tl.to(slides[i - 1], { autoAlpha: 0, yPercent: -7, scale: .96, duration: .45 }, at)
+        .to(s, { '--a': featPs[i].a, duration: .7 }, at + .1)
+        .fromTo(slides[i], { autoAlpha: 0 }, { autoAlpha: 1, duration: .3 }, at + .4)
+        .fromTo($$('.s-copy > *', slides[i]), { y: 48, opacity: 0 }, { y: 0, opacity: 1, duration: .45, stagger: .06, ease: 'power2.out' }, at + .4)
+        .fromTo($('.s-art', slides[i]), { yPercent: 14, scale: .85, rotate: 4 }, { yPercent: 0, scale: 1, rotate: 0, duration: .6, ease: 'power2.out' }, at + .4);
+    }
+    const st = tl.scrollTrigger;
+    const go = e => { const d = e.target.closest('.dot'); if (!d) return; const y = st.start + (st.end - st.start) * (+d.dataset.i / (n - 1)); lenis ? lenis.scrollTo(y) : scrollTo({ top: y, behavior: 'smooth' }); };
+    s.addEventListener('click', go);
+    return () => { s.removeEventListener('click', go); s.classList.remove('pinned'); };
+  });
+  mm.add('(max-width: 900px), (max-height: 619px)', () => {
+    gsap.from('.s-slide', { opacity: 0, y: mv(40), duration: .9, ease: 'power3.out', stagger: .1, scrollTrigger: { trigger: s, start: 'top 80%', once: true } });
+  });
+}
+
+/* ---------- app grid with Flip filtering, release list ---------- */
+const card = (p, r) => { const l = r || latest(p); return `<article class="card" tabindex="0" role="button" data-app="${p.repo}"${r ? ` data-rel="${esc(r.tag)}"` : ''} style="--a:${p.a}" data-plats="${p.plats.join(',')}" data-s="${esc([p.name, p.line, p.desc, p.plats.join(' '), Object.keys(DATA.repos[p.repo]?.languages || {}).join(' ')].join(' ').toLowerCase())}" aria-label="${esc(p.name)}">
+  <div class="thumb">${media(p)}${fresh(l) ? '<span class="new">New</span>' : ''}</div>
+  <div class="info"><h3>${esc(p.name)}</h3><p>${esc(p.line)}</p><div class="foot-row"><span>${l ? `<b>${esc(l.tag)}</b>${ago(l.date)}` : 'Source only'}</span><span class="plats">${p.plats.map(x => `<span class="badge">${x}</span>`).join('')}</span></div></div></article>`; };
+const relRow = ({ p, r }) => `<div class="rel" tabindex="0" role="button" data-app="${p.repo}" data-rel="${esc(r.tag)}" style="--a:${p.a}" data-s="${esc((p.name + ' ' + r.tag + ' ' + gist(r.body)).toLowerCase())}">
+  <span class="n"><i></i>${esc(p.name)}</span><span class="v">${esc(r.tag)}</span><span class="g">${esc(gist(r.body))}</span><time datetime="${r.date}">${ago(r.date)}</time><span class="go">${ICON.go}</span></div>`;
+
+const view = { plat: 'All', q: '' };
+let built = false;
+function buildLists() {
+  const ps = ranked(), feed = ps.flatMap(p => rel(p).map(r => ({ p, r }))).sort((a, b) => new Date(b.r.date) - new Date(a.r.date)).slice(0, 12);
+  $('#grid').innerHTML = ps.map(p => card(p)).join('');
+  $('#rels').innerHTML = feed.map(relRow).join('');
+  const count = k => ps.filter(p => k === 'All' || p.plats.includes(k)).length;
+  const ks = ['All', ...['Android', 'Windows', 'Browser', 'Source'].filter(k => ps.some(p => p.plats.includes(k)))];
+  if (!ks.includes(view.plat)) view.plat = 'All';
+  $('#filters').innerHTML = ks.map(k => `<button type="button" class="chip${k === view.plat ? ' on' : ''}" data-plat="${k}" aria-pressed="${k === view.plat}">${k}<small>${count(k)}</small></button>`).join('');
+  applyFilter(false);
+  if (G && !built) {
+    gsap.set(".card, .rel", { opacity: 0, y: mv(44) });
+    for (const sel of [".card", ".rel"]) ScrollTrigger.batch(sel, { start: "top 92%", once: true,
+      onEnter: b => gsap.to(b, { opacity: 1, y: 0, duration: 1, ease: "power3.out", stagger: .08, clearProps: "transform,opacity" }) });
+    $$(".head h2").forEach(h => gsap.from(h.querySelectorAll(".ln > span"), { yPercent: mv(115), opacity: RM ? 0 : 1, duration: 1.1, ease: "power4.out", stagger: .07, scrollTrigger: { trigger: h, start: "top 88%", once: true } }));
+    gsap.from(".chips-row .chip", { opacity: 0, y: mv(16), duration: .7, ease: "power3.out", stagger: .05, scrollTrigger: { trigger: "#filters", start: "top 92%", once: true } });
+    if (!RM) {
+      gsap.from("#mega", { yPercent: 45, ease: "none", scrollTrigger: { trigger: "footer", start: "top bottom", end: "bottom bottom", scrub: true } });
+      gsap.to(".hero h1", { yPercent: -12, ease: "none", scrollTrigger: { trigger: ".hero", start: "top top", end: "bottom top", scrub: true } });
+    }
+  }
+  built = true; if (G) ScrollTrigger.refresh();
+}
+function applyFilter(animate) {
+  const cards = $$('#grid .card'), ok = c => (view.plat === 'All' || c.dataset.plats.split(',').includes(view.plat)) && (!view.q || c.dataset.s.includes(view.q));
+  const st = G && animate ? Flip.getState(cards) : null;
+  cards.forEach(c => c.classList.toggle('off', !ok(c)));
+  if (st) Flip.from(st, { duration: .7, ease: 'power3.inOut', absolute: true, stagger: .03,
+    onEnter: e => gsap.fromTo(e, { opacity: 0, scale: .92 }, { opacity: 1, scale: 1, duration: .5, clearProps: 'transform,opacity' }),
+    onLeave: e => gsap.to(e, { opacity: 0, scale: .92, duration: .3 }) });
+  $$('#rels .rel').forEach(r => r.classList.toggle('off', !!view.q && !r.dataset.s.includes(view.q)));
+  $('#empty').hidden = cards.some(c => !c.classList.contains('off'));
 }
 
 /* ---------- details modal: releases are the episodes ---------- */
@@ -156,7 +269,7 @@ function openApp(repo, relTag) {
   const shots = p.shots.length ? p.shots.map(([c, f]) => `<button type="button" data-img="img/${f}.png" aria-label="Enlarge ${esc(c)}"><img src="img/${f}.png" alt="${esc(c)}" loading="lazy"></button>`).join('') : `<figure>${media(p)}<figcaption>Illustration, not a screenshot.</figcaption></figure>`;
   modal.style.setProperty('--a', p.a);
   modal.innerHTML = `<button type="button" class="icon-btn close" aria-label="Close details">&times;</button>
-  <div class="m-media" style="--a:${p.a}"><div class="bd"></div><div class="bd-media">${media(p)}</div>
+  <div class="m-media"><div class="bd"></div><div class="bd-media">${media(p)}</div>
     <div class="m-head"><h2>${esc(p.name)}</h2><div class="btns"><a class="btn play" href="${best(p)}">${L ? ICON.dl + ' Download' : 'View on GitHub'}</a>${L ? `<a class="btn info" href="https://github.com/${USER}/${p.repo}" target="_blank" rel="noopener">GitHub</a>` : ''}</div></div></div>
   <div class="m-body">
     <div class="m-cols"><div>
@@ -165,15 +278,19 @@ function openApp(repo, relTag) {
       <dl class="side"><div><dt>Platforms</dt><dd>${p.plats.join(', ')}</dd></div>
         <div><dt>Written in</dt><dd>${top.slice(0, 3).map(([n, b]) => `${n} ${Math.round(b / tot * 100)}%`).join(', ')}<div class="lang">${top.map(([n, b]) => `<i title="${n}" style="flex:${b};background:${LANG[n] || '#888'}"></i>`).join('')}</div></dd></div>
         <div><dt>Downloads so far</dt><dd>${dls.toLocaleString()}</dd></div><div><dt>Releases</dt><dd>${R.length} shown, latest ${L ? ago(L.date) : 'none'}</dd></div></dl></div>
-    ${L ? `<div class="sec"><h3>Get ${esc(L.tag)}</h3><div class="dl">${as.map(a => `<a href="${a.url}" class="${kind(a.name) === dev ? 'rec' : ''}"><span class="fn">${esc(a.name)}</span><span class="sz">${size(a.size)}</span>${kind(a.name) === dev ? '<span class="rc">Recommended for your device</span>' : `<span class="rc">${kind(a.name)}</span>`}</a>`).join('') || `<a href="${L.url}"><span class="fn">View on GitHub</span></a>`}</div>
+    ${L ? `<div class="sec"><h3>Get ${esc(L.tag)}</h3><div class="dl">${as.map(a => `<a href="${a.url}" class="${kind(a.name) === dev ? 'rec' : ''}"><span class="fn">${esc(a.name)}</span><span class="sz">${size(a.size)}</span><span class="rc">${kind(a.name) === dev ? 'Recommended for your device' : kind(a.name)}</span></a>`).join('') || `<a href="${L.url}"><span class="fn">View on GitHub</span></a>`}</div>
       ${extra.length ? `<details class="more-files"><summary>Updater and checksum files (${extra.length})</summary>${extra.map(a => `<a href="${a.url}">${esc(a.name)} (${size(a.size)})</a>`).join('')}</details>` : ''}</div>` : ''}
     ${R.length ? `<div class="sec"><h3>Releases</h3>${R.map(r => `<details class="ep" id="rel-${esc(r.tag)}"${r.tag === (relTag || L?.tag) ? ' open' : ''}><summary><span class="tg">${esc(r.tag)}</span><span><h4>${esc(r.name || r.tag)}</h4><small>${esc(gist(r.body))}</small></span><time datetime="${r.date}">${ago(r.date)}</time></summary>
       <div class="notes">${md(r.body)}<div class="chips">${mainAssets(r).slice(0, 8).map(a => `<a href="${a.url}">${esc(kind(a.name))} ${size(a.size)}</a>`).join('')}<a href="${r.url}" target="_blank" rel="noopener">Release page</a></div></div></details>`).join('')}</div>` : ''}
     <div class="sec"><h3>${p.shots.length ? 'Screenshots' : 'Preview'}</h3><div class="shots">${shots}</div></div>
-    <div class="sec"><h3>More like this</h3><div class="similar">${ranked().filter(x => x !== p).map((x, i) => card(x, null, i)).join('')}</div></div>
+    <div class="sec"><h3>More like this</h3><div class="similar">${ranked().filter(x => x !== p).map(x => card(x)).join('')}</div></div>
     <div class="links"><a href="https://github.com/${USER}/${p.repo}" target="_blank" rel="noopener">Source on GitHub</a><a href="https://github.com/${USER}/${p.repo}/releases" target="_blank" rel="noopener">All releases</a><a href="https://github.com/${USER}/${p.repo}/issues" target="_blank" rel="noopener">Report an issue</a></div>
   </div>`;
-  if (!modal.open) { modal.showModal(); document.body.classList.add('noscroll'); lenis?.stop(); }
+  if (!modal.open) {
+    modal.showModal(); document.body.classList.add('noscroll'); lenis?.stop();
+    if (G) gsap.fromTo(modal, { y: 60, opacity: 0, scale: .96 }, { y: 0, opacity: 1, scale: 1, duration: .7, ease: 'power3.out', clearProps: 'transform,opacity' });
+  }
+  if (G) gsap.from('.m-media .bd-media > *, .m-head > *', { y: 24, opacity: 0, duration: .8, ease: 'power3.out', stagger: .08, delay: .1 });
   modal.scrollTop = 0;
   const h = `#app=${repo}${relTag ? '&rel=' + encodeURIComponent(relTag) : ''}`;
   if (location.hash !== h) history.pushState(null, '', h);
@@ -182,73 +299,38 @@ function openApp(repo, relTag) {
 modal.addEventListener('close', () => { document.body.classList.remove('noscroll'); lenis?.start(); if (location.hash.startsWith('#app=')) history.pushState(null, '', location.pathname + location.search); });
 const fromHash = () => { const m = location.hash.match(/^#app=([^&]+)(?:&rel=(.+))?/); if (m) openApp(m[1], m[2] && decodeURIComponent(m[2])); else closeModal(); };
 addEventListener('popstate', fromHash);
-
 const closeModal = () => {
-  if (!modal.open || modal.classList.contains('closing')) return;
-  if (RM) return modal.close();
-  modal.classList.add('closing');
-  modal.addEventListener('animationend', function h(e) { if (e.target !== modal) return; modal.removeEventListener('animationend', h); modal.classList.remove('closing'); modal.close(); });
+  if (!modal.open) return;
+  if (!G) return modal.close();
+  gsap.to(modal, { y: 40, opacity: 0, scale: .97, duration: .3, ease: 'power2.in', onComplete: () => { modal.close(); gsap.set(modal, { clearProps: 'transform,opacity' }); } });
 };
-// The clicked card (or billboard art) morphs into the modal header via the View Transitions API.
-const openMorph = c => {
-  const go = () => openApp(c.dataset.app, c.dataset.rel);
-  if (RM || !document.startViewTransition || modal.open) return go();
-  const from = c.closest('.slide')?.querySelector('.bd-media') || $('.thumb', c) || c;
-  from.style.viewTransitionName = 'hero'; modal.dataset.vt = 1;
-  const t = document.startViewTransition(() => { from.style.viewTransitionName = ''; go(); const m = $('.m-media', modal); if (m) m.style.viewTransitionName = 'hero'; });
-  t.finished.finally(() => { const m = $('.m-media', modal); if (m) m.style.viewTransitionName = ''; delete modal.dataset.vt; });
-};
-let suppress = false;
-document.addEventListener('click', e => { if (suppress) { e.stopPropagation(); e.preventDefault(); } }, true);
+
+/* ---------- interaction ---------- */
 document.addEventListener('click', e => {
   const t = e.target;
   if (t === modal) return closeModal();
   if (t.closest('#lightbox .close') || t === lightbox) return lightbox.close();
   if (t.closest('#modal > .close')) return closeModal();
   const im = t.closest('[data-img]'); if (im) { $('img', lightbox).src = im.dataset.img; return lightbox.showModal(); }
-  const c = t.closest('[data-app]'); if (c) openMorph(c);
+  const chip = t.closest('.chip'); if (chip) {
+    view.plat = chip.dataset.plat; $$('.chip').forEach(c => { c.classList.toggle('on', c === chip); c.setAttribute('aria-pressed', c === chip); }); return applyFilter(true);
+  }
+  if (t.closest('a[href]')) return;
+  const c = t.closest('[data-app]'); if (c) openApp(c.dataset.app, c.dataset.rel);
 });
-
-/* pointer effects: card tilt and spotlight, magnetic buttons, mouse drag-scroll */
-if (!RM) {
-  document.addEventListener('pointermove', e => {
-    if (e.pointerType !== 'mouse') return;
-    const c = e.target.closest?.('.card'), b = e.target.closest?.('.btn');
-    if (c) { const r = c.getBoundingClientRect(), x = (e.clientX - r.left) / r.width, y = (e.clientY - r.top) / r.height; c.style.setProperty('--mx', x * 100 + '%'); c.style.setProperty('--my', y * 100 + '%'); c.style.setProperty('--rx', (.5 - y) * 9 + 'deg'); c.style.setProperty('--ry', (x - .5) * 11 + 'deg'); }
-    if (b) { const r = b.getBoundingClientRect(); b.style.setProperty('--tx', (e.clientX - r.left - r.width / 2) * .15 + 'px'); b.style.setProperty('--ty', (e.clientY - r.top - r.height / 2) * .25 + 'px'); }
-  });
-  document.addEventListener('pointerout', e => {
-    for (const s of ['.card', '.btn']) { const el = e.target.closest?.(s); if (el && !el.contains(e.relatedTarget)) ['--rx', '--ry', '--tx', '--ty'].forEach(v => el.style.removeProperty(v)); }
-  });
-}
-let drag = null;
-document.addEventListener('pointerdown', e => { if (e.pointerType !== 'mouse' || e.button) return; const st = e.target.closest('.strip'); if (st) drag = { st, x: e.clientX, l: st.scrollLeft, moved: false }; });
-addEventListener('pointermove', e => { if (!drag) return; const dx = e.clientX - drag.x; if (Math.abs(dx) > 6) { drag.moved = true; drag.st.classList.add('dragging'); } if (drag.moved) drag.st.scrollLeft = drag.l - dx; });
-addEventListener('pointerup', () => { if (!drag) return; const { st, moved } = drag; drag = null; if (moved) { suppress = true; setTimeout(() => { suppress = false; st.classList.remove('dragging'); }, 60); } });
-document.addEventListener('dragstart', e => { if (e.target.closest?.('.strip')) e.preventDefault(); });
-document.addEventListener('keydown', e => { const c = e.target.closest?.('.card'); if (c && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); c.click(); } });
-
-/* ---------- search, top bar ---------- */
-const sb = $('#searchbox'), q = $('#q');
-$('#searchbtn').onclick = () => { sb.classList.toggle('open'); if (sb.classList.contains('open')) q.focus(); else { q.value = ''; buildRows(); } };
-q.addEventListener('input', () => buildRows(q.value.trim().toLowerCase()));
-q.addEventListener('blur', () => { if (!q.value) sb.classList.remove('open'); });
-sb.onsubmit = e => e.preventDefault();
-let tick = false;
-addEventListener('scroll', () => {
-  $('#topbar').classList.toggle('solid', scrollY > 40);
-  if (RM || tick) return; tick = true;
-  requestAnimationFrame(() => { tick = false; if (scrollY < innerHeight * 1.3) $('#billboard').style.setProperty('--sy', scrollY); });
-}, { passive: true });
+document.addEventListener('keydown', e => { const c = e.target.closest?.('.card, .rel'); if (c && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); c.click(); } });
+const q = $('#q');
+q.addEventListener('input', () => { view.q = q.value.trim().toLowerCase(); applyFilter(true); });
+$('#searchbox').onsubmit = e => e.preventDefault();
 
 /* ---------- data: snapshot first, then live from GitHub ---------- */
 const status = (cls, txt) => { const s = $('#status'); s.className = 'status ' + cls; $('span', s).textContent = txt; };
 const gh = path => fetch('https://api.github.com/' + path, { headers: { Accept: 'application/vnd.github+json' } }).then(r => { if (!r.ok) throw new Error(r.status); return r.json(); });
 const slim = r => ({ tag: r.tag_name, name: r.name, date: r.published_at, body: r.body || '', url: r.html_url, pre: r.prerelease, assets: r.assets.map(a => ({ name: a.name, size: a.size, dl: a.download_count, url: a.browser_download_url })) });
 // Every public, non-archived, non-fork repo is discovered on each visit, except this site and the portfolio repo.
-const SKIP = /^(projects|.*\.github\.io)$/i;
+const SKIP = /^(projects|.*\.github\.io)$/i, FORKS = new Set(['open-dock']); // forks are skipped unless listed here
 const fetchLive = async () => {
-  const list = (await gh(`users/${USER}/repos?type=owner&sort=pushed&per_page=100`)).filter(r => !r.fork && !r.archived && !r.private && !SKIP.test(r.name));
+  const list = (await gh(`users/${USER}/repos?type=owner&sort=pushed&per_page=100`)).filter(r => (!r.fork || FORKS.has(r.name)) &&!r.archived && !r.private && !SKIP.test(r.name));
   const repos = {};
   await Promise.all(list.map(async r => {
     const releases = (await gh(`repos/${USER}/${r.name}/releases?per_page=8`)).filter(x => !x.draft).map(slim);
@@ -258,7 +340,7 @@ const fetchLive = async () => {
   return { generated: new Date().toISOString(), repos };
 };
 const sig = d => JSON.stringify(Object.keys(d.repos).sort().map(k => [k, d.repos[k].meta?.description, d.repos[k].releases.map(r => r.tag + r.assets.map(a => a.dl))]));
-const render = () => { buildBillboard(); buildRows(q.value.trim().toLowerCase()); };
+const render = () => { meshColors(ranked()); buildStats(); buildMarquee(); buildShowcase(); buildLists(); };
 
 // Pulls fresh data (cached 15 min per browser) and re-renders only when a release, repo or description changed.
 async function refresh() {
