@@ -13,7 +13,7 @@ const ICON = { dl: svg('<path d="M12 3v12m0 0-5-5m5 5 5-5M4 20h16"/>'), info: sv
 /* ---------- content that GitHub does not provide ---------- */
 // Hand-written details for the apps I curated. Any other public repo is picked up automatically (see auto()).
 const P0 = [
-  { repo: '1-download-manager', name: '1 download manager', a: '#5b8cff', plats: ['Android', 'Windows', 'Browser'],
+  { repo: '1-download-manager', name: '1 download manager', a: '#707070', plats: ['Android', 'Windows', 'Browser'],
     line: 'One queue for every download.',
     desc: 'A free download manager for Android and Windows: direct links, YouTube, torrents and free media libraries in one queue, with browser extensions for Chrome and Firefox.',
     feats: [['Fast, resumable downloads', 'Segmented HTTP and HTTPS with pause, resume, retry and a speed limit.'], ['Batch download', 'Paste many links at once, or a range like file[001-120].jpg.'],
@@ -66,12 +66,12 @@ const P0 = [
 ];
 const CUR = Object.fromEntries(P0.map(p => [p.repo, p]));
 let P = [];
-const LANG = { Kotlin: '#a97bff', JavaScript: '#f1e05a', PowerShell: '#5391fe', HTML: '#e34c26', 'C#': '#3fb950', 'C++': '#f34b7d', Batchfile: '#c1f12e', Shell: '#89e051', CSS: '#7f5fd0', TypeScript: '#3178c6' };
+const LANG = {};
 
 /* ---------- illustrations (not screenshots) for apps without public screenshots ---------- */
 // The window is tinted with the app colour; the fill attributes are the fallback where color-mix() is unsupported.
-const win = (inner, label, c) => `<svg viewBox="0 0 520 320" role="img" aria-label="${label}"><rect x="4" y="4" width="512" height="312" rx="14" fill="#16181e" style="fill:color-mix(in oklab, ${c} 12%, #14161c)" stroke="#ffffff30" stroke-width="2"/><path d="M4 18a14 14 0 0 1 14-14h484a14 14 0 0 1 14 14v20H4Z" fill="#22252d" style="fill:color-mix(in oklab, ${c} 22%, #1d2027)"/><circle cx="26" cy="21" r="5" fill="#ff5d7a"/><circle cx="44" cy="21" r="5" fill="#e0a526"/><circle cx="62" cy="21" r="5" fill="#55c47f"/>${inner}</svg>`;
-const genericArt = p => win(`<text x="260" y="190" text-anchor="middle" fill="${p.a}" font-size="130" font-weight="800" font-family="Onest, sans-serif">${esc(p.name[0])}</text><text x="260" y="245" text-anchor="middle" fill="#b9bcc4" style="fill:color-mix(in oklab, ${p.a} 30%, #c9ccd3)" font-size="16" font-family="Onest, sans-serif">${esc(p.name)}</text>`, `Illustration for ${esc(p.name)}`, p.a);
+const win = (inner, label, c) => `<svg viewBox="0 0 520 320" role="img" aria-label="${label}"><rect x="4" y="4" width="512" height="312" rx="14" fill="#181818" style="fill:color-mix(in oklab, ${c} 12%, #141414)" stroke="#ffffff30" stroke-width="2"/><path d="M4 18a14 14 0 0 1 14-14h484a14 14 0 0 1 14 14v20H4Z" fill="#222" style="fill:color-mix(in oklab, ${c} 22%, #1d1d1d)"/><circle cx="26" cy="21" r="5" fill="#ff5d7a"/><circle cx="44" cy="21" r="5" fill="#e0a526"/><circle cx="62" cy="21" r="5" fill="#55c47f"/>${inner}</svg>`;
+const genericArt = p => win(`<text x="260" y="190" text-anchor="middle" fill="${p.a}" font-size="130" font-weight="800" font-family="Onest, sans-serif">${esc(p.name[0])}</text><text x="260" y="245" text-anchor="middle" fill="#bbb" style="fill:color-mix(in oklab, ${p.a} 30%, #ccc)" font-size="16" font-family="Onest, sans-serif">${esc(p.name)}</text>`, `Illustration for ${esc(p.name)}`, p.a);
 const media = p => p.phones ? `<div class="phones">${p.phones.map(f => `<img src="img/${f}.png" alt="" loading="lazy">`).join('')}</div>` : p.hero ? `<img src="img/${p.hero}.png" alt="" loading="lazy">` : genericArt(p);
 
 /* ---------- helpers ---------- */
@@ -97,7 +97,7 @@ const auto = (repo, d) => {
   return { repo, name: repo.replace(/[-_]+/g, ' ').replace(/^./, c => c.toUpperCase()), a: `hsl(${hue(repo)} 85% 62%)`, plats: ks.size ? [...ks] : ['Source'],
     line: desc || 'A project on GitHub.', desc: desc || 'No description yet. See the source on GitHub.', feats: [], shots: [], auto: true };
 };
-const sync = () => { P = Object.entries(DATA.repos).map(([k, d]) => CUR[k] || auto(k, d)); };
+const sync = () => { P = Object.entries(DATA.repos).map(([k, d]) => ({ ...(CUR[k] || auto(k, d)), a: '#707070' })); }; // monochrome: one neutral accent for every app
 const rel = p => DATA.repos[p.repo]?.releases || [];
 const latest = p => rel(p)[0];
 const stamp = p => new Date(latest(p)?.date || 0).getTime() || new Date(DATA.repos[p.repo]?.meta?.pushed || 0).getTime() / 1e3;
