@@ -26,6 +26,15 @@
         ],
         "createdAt": "2026-10-24T02:09:05.550Z",
         "reason": "user confirmed: keep ambient glow"
+      },
+      {
+        "rule": "broken-image",
+        "value": "*",
+        "files": [
+          "index.html"
+        ],
+        "createdAt": "2026-11-06T14:43:07.694Z",
+        "reason": "Claude: lightbox <img> inside a closed <dialog>; app.js sets src before showModal(), so it never renders empty"
       }
     ]
   }

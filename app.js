@@ -8,7 +8,7 @@ document.documentElement.classList.toggle('calm', RM);
 const G = window.gsap && window.ScrollTrigger && window.Flip; // every animation is optional: the page works without GSAP
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const svg = d => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
-const ICON = { dl: svg('<path d="M12 3v12m0 0-5-5m5 5 5-5M4 20h16"/>'), info: svg('<circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.01"/>'), go: svg('<path d="M7 17 17 7M8 7h9v9"/>') };
+const ICON = { dl: svg('<path d="M12 3v12m0 0-5-5m5 5 5-5M4 20h16"/>'), info: svg('<circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.01"/>'), go: svg('<path d="M7 17 17 7M8 7h9v9"/>'), x: svg('<path d="M6 6l12 12M18 6 6 18"/>') };
 
 /* ---------- content that GitHub does not provide ---------- */
 // Hand-written details for the apps I curated. Any other public repo is picked up automatically (see auto()).
@@ -50,7 +50,7 @@ const P0 = [
     desc: 'A Windows desktop media player with a Netflix-style interface. It ships with no content sources: you install the plugins you want. Based on CloudStream.',
     feats: [['Plugins', 'Plain JVM jars in isolated class loaders, plus converted Android plugins. Every download is SHA-256 verified.'], ['Library and history', 'Add titles to a library, resume where you stopped and see Continue watching on Home.'], ['Built-in player', 'libVLC with HLS and DASH, speed, source, audio and subtitle settings, and full keyboard control.'],
       ['Downloads', 'A quality picker for direct files and HLS.'], ['Scales down', 'Works at any window size, down to 420 px wide.'], ['Small updates', 'Delta patches for the app, and plugins update every 6 hours.']],
-    hero: '1s-home', shots: [['Home', '1s-home'], ['Title page', '1s-details'], ['Playback settings', '1s-player-settings'], ['Plugins', '1s-plugins'], ['Player shortcuts', '1s-player-shortcuts']] },,
+    hero: '1s-home', shots: [['Home', '1s-home'], ['Title page', '1s-details'], ['Playback settings', '1s-player-settings'], ['Plugins', '1s-plugins'], ['Player shortcuts', '1s-player-shortcuts']] },
   { repo: 'open-dock', name: 'Open Dock', a: '#7c6cff', plats: ['Android', 'Windows', 'macOS'],
     line: 'Your phone as a control deck for your PC.',
     desc: 'A phone control deck with a local PC companion. Pair by QR code on the same Wi-Fi, then send media keys, shortcuts and voice commands. A modified fork of Freeze.',
@@ -69,8 +69,9 @@ let P = [];
 const LANG = { Kotlin: '#a97bff', JavaScript: '#f1e05a', PowerShell: '#5391fe', HTML: '#e34c26', 'C#': '#3fb950', 'C++': '#f34b7d', Batchfile: '#c1f12e', Shell: '#89e051', CSS: '#7f5fd0', TypeScript: '#3178c6' };
 
 /* ---------- illustrations (not screenshots) for apps without public screenshots ---------- */
-const win = (inner, label) => `<svg viewBox="0 0 520 320" role="img" aria-label="${label}"><rect x="4" y="4" width="512" height="312" rx="14" fill="#1a1216" stroke="#ffffff30" stroke-width="2"/><path d="M4 18a14 14 0 0 1 14-14h484a14 14 0 0 1 14 14v20H4Z" fill="#2a1e24"/><circle cx="26" cy="21" r="5" fill="#ff5d7a"/><circle cx="44" cy="21" r="5" fill="#e0a526"/><circle cx="62" cy="21" r="5" fill="#55c47f"/>${inner}</svg>`;
-const genericArt = p => win(`<text x="260" y="190" text-anchor="middle" fill="${p.a}" font-size="130" font-weight="800" font-family="sans-serif">${esc(p.name[0])}</text><text x="260" y="245" text-anchor="middle" fill="#b7a9ad" font-size="16" font-family="sans-serif">${esc(p.name)}</text>`, `Illustration for ${esc(p.name)}`);
+// The window is tinted with the app colour; the fill attributes are the fallback where color-mix() is unsupported.
+const win = (inner, label, c) => `<svg viewBox="0 0 520 320" role="img" aria-label="${label}"><rect x="4" y="4" width="512" height="312" rx="14" fill="#16181e" style="fill:color-mix(in oklab, ${c} 12%, #14161c)" stroke="#ffffff30" stroke-width="2"/><path d="M4 18a14 14 0 0 1 14-14h484a14 14 0 0 1 14 14v20H4Z" fill="#22252d" style="fill:color-mix(in oklab, ${c} 22%, #1d2027)"/><circle cx="26" cy="21" r="5" fill="#ff5d7a"/><circle cx="44" cy="21" r="5" fill="#e0a526"/><circle cx="62" cy="21" r="5" fill="#55c47f"/>${inner}</svg>`;
+const genericArt = p => win(`<text x="260" y="190" text-anchor="middle" fill="${p.a}" font-size="130" font-weight="800" font-family="Onest, sans-serif">${esc(p.name[0])}</text><text x="260" y="245" text-anchor="middle" fill="#b9bcc4" style="fill:color-mix(in oklab, ${p.a} 30%, #c9ccd3)" font-size="16" font-family="Onest, sans-serif">${esc(p.name)}</text>`, `Illustration for ${esc(p.name)}`, p.a);
 const media = p => p.phones ? `<div class="phones">${p.phones.map(f => `<img src="img/${f}.png" alt="" loading="lazy">`).join('')}</div>` : p.hero ? `<img src="img/${p.hero}.png" alt="" loading="lazy">` : genericArt(p);
 
 /* ---------- helpers ---------- */
@@ -82,9 +83,11 @@ const dev = /Android/i.test(navigator.userAgent) ? 'Android' : /Windows/i.test(n
 const isMeta = n => /\.(json|patch|nupkg)$|SHA256SUMS|^RELEASES$|delta\.zip$/i.test(n);
 const kind = n => /\.apk$/i.test(n) ? 'Android' : /chrome.*\.zip$/i.test(n) ? 'Chrome' : /\.xpi$/i.test(n) ? 'Firefox' : /(\.msi|\.exe|win.*\.zip|portable\.zip)$/i.test(n) ? 'Windows' : '';
 const KO = ['Android', 'Windows', 'Chrome', 'Firefox'];
-const inl = s => s.replace(/`([^`]+)`/g, '<code>$1</code>').replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>').replace(/\[([^\]]+)\]\((https?:[^)\s]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+// Markdown links and bare URLs both become links (a bare URL's trailing punctuation stays outside it).
+const inl = s => s.replace(/`([^`]+)`/g, '<code>$1</code>').replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>').replace(/\[([^\]]+)\]\((https?:[^)\s]+)\)|(https?:\/\/[^\s<]*[^\s<.,;:!?)])/g, (m, t, u, b) => `<a href="${u || b}" target="_blank" rel="noopener">${t || b}</a>`);
 const md = src => { let h = '', ul = false; for (const l of esc(src || '').split(/\r?\n/)) { const li = l.match(/^\s*[-*]\s+(.*)/); if (li) { if (!ul) { h += '<ul>'; ul = true; } h += `<li>${inl(li[1])}</li>`; continue; } if (ul) { h += '</ul>'; ul = false; } const hd = l.match(/^#{1,6}\s+(.*)/); if (hd) h += `<h4>${inl(hd[1])}</h4>`; else if (l.trim()) h += `<p>${inl(l)}</p>`; } return h + (ul ? '</ul>' : '') || '<p>No release notes.</p>'; };
-const gist = b => (b || '').split(/\r?\n/).map(s => s.replace(/^[#>*\-\s]+/, '').replace(/\*\*|`/g, '').trim()).find(Boolean) || 'No release notes.';
+// First line of real content: skips headings, bold-only labels like **Android**, and GitHub's "Full Changelog" link.
+const gist = b => (b || '').split(/\r?\n/).filter(s => !/^\s*(#|\*\*[^*]+\*\*:?\s*$|(\*\*)?Full Changelog)/i.test(s)).map(s => s.replace(/^[>*\-\s]+/, '').replace(/\*\*|`/g, '').trim()).find(Boolean) || 'No release notes.';
 
 let DATA = { repos: {}, generated: null };
 // New repos get a card built from their GitHub description, language and release assets.
@@ -194,7 +197,7 @@ function buildMarquee() {
 let featPs = [], mm;
 const slideHTML = p => { const l = latest(p); return `<div class="s-in"><div class="s-copy"><span class="tag"><b>${fresh(l) ? 'New release' : 'Latest'}</b>${l ? `<span>${esc(l.tag)}</span><span>${ago(l.date)}</span>` : ''}</span>
   <h2>${esc(p.name)}</h2><p>${esc(p.line)}${p.desc === p.line ? '' : ' ' + esc(p.desc)}</p>
-  <div class="btns"><a class="btn play" href="${best(p)}">${ICON.dl} Download</a><button class="btn info" type="button" data-app="${p.repo}">${ICON.info} More info</button></div></div><div class="s-art">${media(p)}</div></div>`; };
+  <div class="btns"><a class="btn play" href="${best(p)}">${ICON.dl} Download</a><button class="btn ghost" type="button" data-app="${p.repo}">${ICON.info} More info</button></div></div><div class="s-art">${media(p)}</div></div>`; };
 function buildShowcase() {
   featPs = ranked().filter(latest).slice(0, 5);
   const s = $('#showcase'); mm?.revert();
@@ -278,19 +281,20 @@ function openApp(repo, relTag) {
   const R = rel(p), L = R[0], langs = DATA.repos[p.repo]?.languages || {}, tot = Object.values(langs).reduce((a, b) => a + b, 0) || 1;
   const dls = R.reduce((n, r) => n + r.assets.reduce((m, a) => m + (a.dl || 0), 0), 0);
   const as = mainAssets(L), extra = (L?.assets || []).filter(a => isMeta(a.name));
-  const top = Object.entries(langs).sort((a, b) => b[1] - a[1]);
+  const top = Object.entries(langs).sort((a, b) => b[1] - a[1]), pct = b => Math.round(b / tot * 100);
   const shots = p.shots.length ? p.shots.map(([c, f]) => `<figure><button type="button" data-img="img/${f}.png" aria-label="Enlarge ${esc(c)}"><img src="img/${f}.png" alt="${esc(c)}" loading="lazy"></button><figcaption>${esc(c)}</figcaption></figure>`).join('') : '';
   const rk = ranked(), i = rk.indexOf(p), nb = [rk[(i + rk.length - 1) % rk.length], rk[(i + 1) % rk.length]];
+  modal.getAnimations().forEach(a => a.cancel()); // a pending close animation must not close the app being opened
   modal.style.setProperty('--a', p.a);
-  modal.innerHTML = `<button type="button" class="icon-btn close" aria-label="Close details">&times;</button>
+  modal.innerHTML = `<button type="button" class="icon-btn close" aria-label="Close details">${ICON.x}</button>
   <div class="m-media"><div class="bd"></div><div class="bd-media">${media(p)}</div>
-    <div class="m-head"><h2>${esc(p.name)}</h2><div class="btns"><a class="btn play" href="${best(p)}">${L ? ICON.dl + ' Download' : 'View on GitHub'}</a>${L ? `<a class="btn info" href="https://github.com/${USER}/${p.repo}" target="_blank" rel="noopener">GitHub</a>` : ''}</div></div></div>
+    <div class="m-head"><h2>${esc(p.name)}</h2><div class="btns"><a class="btn play" href="${best(p)}">${L ? ICON.dl + ' Download' : 'View on GitHub'}</a>${L ? `<a class="btn ghost" href="https://github.com/${USER}/${p.repo}" target="_blank" rel="noopener">GitHub</a>` : ''}</div></div></div>
   <div class="m-body">
     <div class="m-cols"><div>
       <div class="meta">${L ? `<span class="good">${esc(L.tag)}</span><span>${day(L.date)}</span>` : ''}${p.plats.map(x => `<span class="badge">${x}</span>`).join('')}${(DATA.repos[p.repo]?.meta?.topics || []).map(t => `<span class="badge">${esc(t)}</span>`).join('')}</div>
       <p>${esc(p.desc)}</p><ul class="feat">${p.feats.map(([h, t]) => `<li><b>${esc(h)}.</b> ${esc(t)}</li>`).join('')}</ul></div>
       <dl class="side"><div><dt>Platforms</dt><dd>${p.plats.join(', ')}</dd></div>
-        <div><dt>Written in</dt><dd>${top.slice(0, 3).map(([n, b]) => `${n} ${Math.round(b / tot * 100)}%`).join(', ')}<div class="lang">${top.map(([n, b]) => `<i title="${n}" style="flex:${b};background:${LANG[n] || '#888'}"></i>`).join('')}</div></dd></div>
+        <div><dt>Written in</dt><dd>${top.filter(([, b]) => pct(b)).slice(0, 3).map(([n, b]) => `${n} ${pct(b)}%`).join(', ')}<div class="lang">${top.map(([n, b]) => `<i title="${n}" style="flex:${b};background:${LANG[n] || '#888'}"></i>`).join('')}</div></dd></div>
         <div><dt>Downloads so far</dt><dd>${dls.toLocaleString()}</dd></div><div><dt>Releases</dt><dd>${R.length} shown, latest ${L ? ago(L.date) : 'none'}</dd></div></dl></div>
     ${L ? `<div class="sec"><h3>Get ${esc(L.tag)}</h3><div class="dl">${as.map(a => `<a href="${a.url}" class="${kind(a.name) === dev ? 'rec' : ''}"><span class="fn">${esc(a.name)}</span><span class="sz">${size(a.size)}</span><span class="rc">${kind(a.name) === dev ? 'Recommended for your device' : kind(a.name)}</span></a>`).join('') || `<a href="${L.url}"><span class="fn">View on GitHub</span></a>`}</div>
       ${extra.length ? `<details class="more-files"><summary>Updater and checksum files (${extra.length})</summary>${extra.map(a => `<a href="${a.url}">${esc(a.name)} (${size(a.size)})</a>`).join('')}</details>` : ''}</div>` : ''}
@@ -303,7 +307,8 @@ function openApp(repo, relTag) {
   </div>`;
   if (!modal.open) {
     modal.showModal(); document.body.classList.add('noscroll'); lenis?.stop();
-    if (G) gsap.fromTo(modal, { y: 60, opacity: 0, scale: .96 }, { y: 0, opacity: 1, scale: 1, duration: .7, ease: 'power3.out', clearProps: 'transform,opacity' });
+    // Web Animations, not GSAP: GSAP briefly re-parents a fixed element to read its transform, which drops an open dialog out of the top layer.
+    if (!RM) modal.animate({ opacity: [0, 1], transform: ['translateY(60px) scale(.96)', 'none'] }, { duration: 700, easing: 'cubic-bezier(.16, 1, .3, 1)' });
   }
   if (G) gsap.from('.m-media .bd-media > *, .m-head > *', { y: 24, opacity: 0, duration: .8, ease: 'power3.out', stagger: .08, delay: .1 });
   modal.scrollTop = 0;
@@ -316,8 +321,8 @@ const fromHash = () => { const m = location.hash.match(/^#app=([^&]+)(?:&rel=(.+
 addEventListener('popstate', fromHash);
 const closeModal = () => {
   if (!modal.open) return;
-  if (!G) return modal.close();
-  gsap.to(modal, { y: 40, opacity: 0, scale: .97, duration: .3, ease: 'power2.in', onComplete: () => { modal.close(); gsap.set(modal, { clearProps: 'transform,opacity' }); } });
+  if (RM) return modal.close();
+  modal.animate({ opacity: [1, 0], transform: ['none', 'translateY(40px) scale(.97)'] }, { duration: 300, easing: 'cubic-bezier(.5, 0, .75, 0)' }).onfinish = () => modal.close();
 };
 
 /* ---------- interaction ---------- */
@@ -340,7 +345,7 @@ q.addEventListener('input', () => { view.q = q.value.trim().toLowerCase(); apply
 $('#searchbox').onsubmit = e => e.preventDefault();
 
 /* ---------- data: snapshot first, then live from GitHub ---------- */
-const status = (cls, txt) => { const s = $('#status'); s.className = 'status ' + cls; $('span', s).textContent = txt; };
+const status = (cls, txt) => { const s = $('#status'); s.className = 'status ' + cls; s.title = txt; $('span', s).textContent = txt; };
 const gh = path => fetch('https://api.github.com/' + path, { headers: { Accept: 'application/vnd.github+json' } }).then(r => { if (!r.ok) throw new Error(r.status); return r.json(); });
 const slim = r => ({ tag: r.tag_name, name: r.name, date: r.published_at, body: r.body || '', url: r.html_url, pre: r.prerelease, assets: r.assets.map(a => ({ name: a.name, size: a.size, dl: a.download_count, url: a.browser_download_url })) });
 // Every public, non-archived, non-fork repo is discovered on each visit, except this site and the portfolio repo.
